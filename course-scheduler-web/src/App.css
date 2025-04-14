@@ -117,16 +117,28 @@ body {
   margin: 0 auto;
 }
 
-h1, h2, h3 {
+h1,
+h2,
+h3 {
   color: var(--text-color);
   margin-top: 0;
   margin-bottom: var(--space-4);
   font-weight: var(--font-weight-bold);
   line-height: 1.2;
 }
-h1 { font-size: 2rem; }
-h2 { font-size: 1.5rem; }
-h3 { font-size: 1.125rem; margin-bottom: var(--space-3); }
+
+h1 {
+  font-size: 2rem;
+}
+
+h2 {
+  font-size: 1.5rem;
+}
+
+h3 {
+  font-size: 1.125rem;
+  margin-bottom: var(--space-3);
+}
 
 
 hr {
@@ -163,6 +175,7 @@ hr {
   transition: background-color 0.2s ease;
   font-size: var(--font-size-sm);
 }
+
 .theme-toggle-button:hover {
   background-color: var(--button-hover-bg);
 }
@@ -182,8 +195,9 @@ hr {
   gap: var(--space-2);
   font-size: var(--font-size-sm);
 }
+
 .grouping-controls label {
-    font-weight: var(--font-weight-normal);
+  font-weight: var(--font-weight-normal);
 }
 
 button {
@@ -198,9 +212,11 @@ button {
   border: 1px solid var(--button-border);
   outline: none;
 }
+
 button:hover {
   background-color: var(--button-hover-bg);
 }
+
 button:focus-visible {
   outline: var(--focus-outline-width) var(--focus-outline-style) var(--focus-outline-color);
   outline-offset: var(--focus-outline-offset);
@@ -211,6 +227,7 @@ button:focus-visible {
   color: var(--danger-button-text);
   border-color: var(--danger-button-border);
 }
+
 .danger-button:hover {
   background-color: var(--danger-button-hover-bg);
 }
@@ -220,11 +237,13 @@ button:focus-visible {
   padding: var(--space-1) var(--space-2);
   font-size: var(--font-size-xs);
 }
+
 .lock-button.locked {
   background-color: var(--lock-button-locked-bg);
   color: var(--lock-button-locked-text);
   border-color: var(--lock-button-locked-border);
 }
+
 .lock-button.unlocked {
   background-color: var(--lock-button-unlocked-bg);
   color: var(--lock-button-unlocked-text);
@@ -238,8 +257,9 @@ button:focus-visible {
   padding: var(--space-1) var(--space-2);
   font-size: var(--font-size-xs);
 }
+
 .delete-button:hover {
-   background-color: var(--danger-button-hover-bg);
+  background-color: var(--danger-button-hover-bg);
 }
 
 .add-range-button {
@@ -256,16 +276,19 @@ button:focus-visible {
   border-radius: 3px;
   font-size: var(--font-size-sm);
 }
+
 .remove-range-button:hover {
   background-color: #f5c6cb;
 }
+
 [data-theme="dark"] .remove-range-button {
   background-color: #583034;
   color: #f8d7da;
   border-color: #721c24;
 }
+
 [data-theme="dark"] .remove-range-button:hover {
-   background-color: #721c24;
+  background-color: #721c24;
 }
 
 
@@ -287,7 +310,7 @@ button:focus-visible {
 }
 
 .course-table th.header-cell {
-   font-weight: var(--font-weight-bold);
+  font-weight: var(--font-weight-bold);
 }
 
 .course-table th.header-cell,
@@ -297,11 +320,13 @@ button:focus-visible {
   border-bottom: 1px solid var(--border-color);
   vertical-align: middle;
 }
+
 .course-table th.header-cell {
-   border-bottom-width: 2px;
+  border-bottom-width: 2px;
 }
+
 .course-table tr:last-child td.data-cell {
-    border-bottom: none;
+  border-bottom: none;
 }
 
 
@@ -314,33 +339,48 @@ button:focus-visible {
 .course-table td:nth-child(9),
 .course-table td:nth-child(10),
 .course-table td:nth-child(11),
-.course-table td:nth-child(12)
-{
+.course-table td:nth-child(12) {
   text-align: center;
 }
+
 .course-table th:nth-child(1),
 .course-table th:nth-child(5),
 .course-table th:nth-child(9),
 .course-table th:nth-child(10),
 .course-table th:nth-child(11),
-.course-table th:nth-child(12)
-{
+.course-table th:nth-child(12) {
   text-align: center;
 }
+
 .course-table th.actions-header,
 .course-table td.actions-cell {
   text-align: center;
 }
+
 .course-table td.actions-cell {
   display: flex;
   justify-content: center;
+  align-items: center;
   gap: var(--space-2);
-  border-bottom: 1px solid var(--border-color);
-}
-.course-table tr:last-child td.actions-cell {
-    border-bottom: none;
 }
 
+.course-table tr {
+  border-bottom: 1px solid var(--border-color);
+}
+
+.course-table tr:last-child {
+  border-bottom: none;
+}
+
+.course-table tr:last-child td.actions-cell {
+  border-bottom: none;
+}
+
+.table-action-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
 
 .course-table-body tr.even-row:not(.locked-row),
 .course-table-body tr.even-row-grouped:not(.locked-row) {
@@ -361,9 +401,8 @@ button:focus-visible {
 .course-table-body tr.locked-row.odd-row,
 .course-table-body tr.locked-row.even-row-grouped,
 .course-table-body tr.locked-row.odd-row-grouped,
-.course-table-body tr.locked-row
-{
-    background-color: var(--locked-row-bg) !important;
+.course-table-body tr.locked-row {
+  background-color: var(--locked-row-bg) !important;
 }
 
 
@@ -402,8 +441,9 @@ button:focus-visible {
 .filter-section {
   margin-bottom: var(--space-4);
 }
+
 .filter-section:last-child {
-    margin-bottom: 0;
+  margin-bottom: 0;
 }
 
 
@@ -434,6 +474,7 @@ button:focus-visible {
   outline: none;
   position: relative;
 }
+
 .day-label input[type="checkbox"]:focus-visible {
   outline: var(--focus-outline-width) var(--focus-outline-style) var(--focus-outline-color);
   outline-offset: var(--focus-outline-offset);
@@ -471,8 +512,9 @@ button:focus-visible {
   font-size: var(--font-size-sm);
   outline: none;
 }
+
 [data-theme="dark"] .time-input::-webkit-calendar-picker-indicator {
-    filter: invert(1);
+  filter: invert(1);
 }
 
 
@@ -509,8 +551,7 @@ input[type="text"]:focus-visible,
 input[type="number"]:focus-visible,
 select:focus-visible,
 .time-input:focus-visible,
-.react-datepicker-wrapper input:focus-visible
-{
+.react-datepicker-wrapper input:focus-visible {
   outline: var(--focus-outline-width) var(--focus-outline-style) var(--focus-outline-color);
   outline-offset: var(--focus-outline-offset);
   border-color: var(--focus-outline-color);
@@ -532,11 +573,267 @@ select:focus-visible,
 
 
 .react-datepicker-wrapper input {
-    padding: var(--space-1) var(--space-2);
-    border: 1px solid var(--input-border);
-    border-radius: 3px;
-    background-color: var(--input-bg);
-    color: var(--input-text);
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--input-border);
+  border-radius: 3px;
+  background-color: var(--input-bg);
+  color: var(--input-text);
+  font-size: var(--font-size-sm);
+  outline: none;
+}
+
+.course-table-row.locked-row.conflict-highlight {
+  background-color: rgba(255, 100, 100, 0.3) !important;
+}
+
+[data-theme='dark'] .course-table-row.locked-row.conflict-highlight {
+  background-color: rgba(255, 0, 0, 0.4) !important;
+}
+
+[data-theme='light'] .course-table-row.locked-row.conflict-highlight {
+  background-color: rgba(255, 150, 150, 0.4) !important;
+}
+
+.course-table-row {
+  transition: background-color 0.3s ease;
+}
+
+
+
+@media (max-width: 992px) {
+  .App {
+    padding: var(--space-4);
+  }
+
+  .header-controls,
+  .table-header-controls {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .table-header-controls h2 {
+    width: 100%;
+    margin-bottom: var(--space-3);
+  }
+
+  .table-header-controls .grouping-controls,
+  .table-header-controls .delete-all-button {
+    align-self: flex-start;
+  }
+
+  .total-units-display,
+  .unique-units-display {
+    display: block;
+    margin-left: 0 !important;
+    margin-top: var(--space-1);
     font-size: var(--font-size-sm);
-    outline: none;
+  }
+}
+
+
+
+
+
+@media (max-width: 768px) {
+  body {
+    padding: var(--space-3);
+    font-size: 14px;
+  }
+
+  h1 {
+    font-size: 1.75rem;
+  }
+
+  h2 {
+    font-size: 1.3rem;
+  }
+
+  h3 {
+    font-size: 1.0rem;
+  }
+
+  .section-container {
+    padding: var(--space-3);
+  }
+
+  .header-controls {
+    margin-bottom: var(--space-4);
+  }
+
+  .theme-toggle-button {
+    align-self: flex-start;
+  }
+
+  .table-header-controls {}
+
+  .total-units-display,
+  .unique-units-display {
+    font-size: var(--font-size-sm);
+  }
+
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .course-table {
+    width: 100%;
+    border-spacing: 0;
+    border-collapse: collapse;
+    font-size: var(--font-size-xs);
+  }
+
+  .course-table thead,
+  .course-table tbody,
+  .course-table tr {}
+
+  .course-table th.header-cell,
+  .course-table td.data-cell {
+    padding: var(--space-2);
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+
+  .course-table th.header-cell {
+    text-align: center;
+  }
+
+  .course-table td:nth-child(1),
+  .course-table td:nth-child(5),
+  .course-table td:nth-child(9),
+  .course-table td:nth-child(10),
+  .course-table td:nth-child(11),
+  .course-table td:nth-child(12) {
+    text-align: center;
+  }
+
+  .course-table td.actions-cell {
+    padding: var(--space-1);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+  }
+
+  .lock-button,
+  .delete-button {
+    font-size: 10px;
+    padding: 3px 5px;
+    min-width: 50px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .time-range-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+  }
+
+  .time-range-index {
+    margin-bottom: var(--space-1);
+    min-width: auto;
+  }
+
+  .time-picker-wrapper {
+    width: 100%;
+  }
+
+  .time-input-label {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .react-datepicker-wrapper,
+  .react-datepicker-wrapper input {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .remove-range-button {
+    align-self: flex-end;
+    margin-top: var(--space-1);
+  }
+
+  .day-checkboxes,
+  .section-type-checkboxes,
+  .status-radio-buttons {
+    gap: var(--space-3);
+  }
+
+  .day-label,
+  .section-type-label,
+  .status-label {
+    font-size: var(--font-size-sm);
+  }
+
+  .raw-data-input textarea {
+    font-size: var(--font-size-xs);
+    min-height: 150px;
+  }
+}
+
+
+@media (max-width: 480px) {
+  body {
+    padding: var(--space-2);
+    font-size: 13px;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+  }
+
+  h2 {
+    font-size: 1.2rem;
+  }
+
+  h3 {
+    font-size: 0.9rem;
+  }
+
+  .section-container {
+    padding: var(--space-2);
+  }
+
+  .course-table th.header-cell,
+  .course-table td.data-cell {
+    padding: var(--space-1) var(--space-2);
+  }
+
+  .course-table td.actions-cell {
+    padding: 2px;
+    gap: 2px;
+  }
+
+  .lock-button,
+  .delete-button {
+    font-size: 9px;
+    padding: 2px 4px;
+    min-width: 45px;
+  }
+
+  .day-checkboxes,
+  .section-type-checkboxes,
+  .status-radio-buttons {
+    gap: var(--space-2);
+  }
+
+  .day-label,
+  .section-type-label,
+  .status-label {
+    font-size: var(--font-size-xs);
+  }
+
+  .add-range-button {
+    font-size: var(--font-size-xs);
+    padding: var(--space-1) var(--space-2);
+  }
+
+  .remove-range-button {
+    padding: 1px 3px;
+    font-size: var(--font-size-xs);
+  }
 }

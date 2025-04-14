@@ -101,4 +101,3 @@ function convertAmPmTo24Hour(timeStr) {
   }
   
   export { parseSchedule };
-  

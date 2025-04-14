@@ -1,10 +1,20 @@
 import React from 'react';
 import DatePicker from 'react-datepicker';
 
-// Import the CSS for react-datepicker
 import 'react-datepicker/dist/react-datepicker.css';
 
 const availableDays = ['M', 'T', 'W', 'TH', 'F', 'S'];
+const availableSectionTypes = [
+  { id: 'AP3', label: 'Online (AP3)' },
+  { id: 'AP4', label: 'Face-to-Face (AP4)' },
+  { id: 'AP5', label: 'Hybrid (AP5)' },
+];
+const statusFilterOptions = [
+  { value: 'all', label: 'Show All' },
+  { value: 'open', label: 'Open Only' },
+  { value: 'closed', label: 'Closed Only' },
+];
+
 
 /**
  * @typedef {object} TimeRange
@@ -13,8 +23,6 @@ const availableDays = ['M', 'T', 'W', 'TH', 'F', 'S'];
  * @property {string} end - End time in HH:mm format (internal state).
  */
 
-// --- Helper Functions for Time Conversion ---
-// These helpers still work with the internal "HH:mm" format
 
 const timeStringToDate = (timeString) => {
   if (!timeString || typeof timeString !== 'string' || !timeString.includes(':')) {
@@ -37,21 +45,21 @@ const dateToTimeString = (date) => {
   }
   const hours = date.getHours().toString().padStart(2, '0');
   const minutes = date.getMinutes().toString().padStart(2, '0');
-  return `${hours}:${minutes}`; // Return HH:mm for state consistency
+  return `${hours}:${minutes}`;
 };
 
 const createTimeDate = (hours, minutes) => {
-    const date = new Date();
-    date.setHours(hours, minutes, 0, 0);
-    return date;
+  const date = new Date();
+  date.setHours(hours, minutes, 0, 0);
+  return date;
 };
 
-const minSelectableTime = createTimeDate(7, 30); // 7:30 AM
-const maxSelectableTime = createTimeDate(21, 0); // 9:00 PM
+const minSelectableTime = createTimeDate(7, 30);
+const maxSelectableTime = createTimeDate(21, 0);
 
 
 /**
- * Component for selecting days and time ranges to exclude.
+ * Component for selecting various filters.
  */
 function TimeFilter({
   excludedDays,
@@ -60,18 +68,22 @@ function TimeFilter({
   onTimeRangeChange,
   onAddTimeRange,
   onRemoveTimeRange,
+  selectedSectionTypes,
+  onSectionTypeChange,
+  selectedStatusFilter,
+  onStatusFilterChange,
 }) {
 
   const ranges = Array.isArray(excludedTimeRanges) ? excludedTimeRanges : [];
+  const currentSelectedTypes = Array.isArray(selectedSectionTypes) ? selectedSectionTypes : [];
 
   const handleTimeChange = (id, field, date) => {
-    const timeString = dateToTimeString(date); // Convert to HH:mm for state
+    const timeString = dateToTimeString(date);
     onTimeRangeChange(id, field, timeString);
   };
 
   return (
     <div className="time-filter">
-      {/* Day selection remains the same */}
       <div className="filter-section">
         <label className="filter-label">Exclude Days:</label>
         <div className="day-checkboxes">
@@ -88,7 +100,6 @@ function TimeFilter({
         </div>
       </div>
 
-      {/* Time range selection updated */}
       <div className="filter-section">
         <label className="filter-label">Exclude Time Ranges:</label>
         {ranges.map((range, index) => (
@@ -106,7 +117,6 @@ function TimeFilter({
                   minTime={minSelectableTime}
                   maxTime={maxSelectableTime}
                   timeCaption="Time"
-                  // Updated: Change display format to 12-hour with AM/PM
                   dateFormat="h:mm aa"
                   className="time-input react-datepicker-input"
                   placeholderText="Start time"
@@ -126,7 +136,6 @@ function TimeFilter({
                   minTime={minSelectableTime}
                   maxTime={maxSelectableTime}
                   timeCaption="Time"
-                  // Updated: Change display format to 12-hour with AM/PM
                   dateFormat="h:mm aa"
                   className="time-input react-datepicker-input"
                   placeholderText="End time"
@@ -150,6 +159,41 @@ function TimeFilter({
           + Add Excluded Time Range
         </button>
       </div>
+
+      <div className="filter-section">
+        <label className="filter-label">Filter by Section Type:</label>
+        <div className="section-type-checkboxes">
+          {availableSectionTypes.map((type) => (
+            <label key={type.id} className="section-type-label">
+              <input
+                type="checkbox"
+                checked={currentSelectedTypes.includes(type.id)}
+                onChange={(e) => onSectionTypeChange(type.id, e.target.checked)}
+              />
+              <span>{type.label}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div className="filter-section">
+        <label className="filter-label">Filter by Status:</label>
+        <div className="status-radio-buttons">
+          {statusFilterOptions.map((option) => (
+            <label key={option.value} className="status-label">
+              <input
+                type="radio"
+                name="statusFilter"
+                value={option.value}
+                checked={selectedStatusFilter === option.value}
+                onChange={(e) => onStatusFilterChange(e.target.value)}
+              />
+              <span>{option.label}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
     </div>
   );
 }
