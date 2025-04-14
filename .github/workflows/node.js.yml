@@ -1,27 +1,21 @@
 name: Deploy Vite site to Pages
 
 on:
-  # Runs on pushes targeting the default branch
   push:
-    branches: [main] # Or your default branch name
+    branches: [main]
 
-  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
-# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
-# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
 concurrency:
   group: pages
   cancel-in-progress: false
 
 jobs:
-  # Build job
   build:
     runs-on: ubuntu-latest
     steps:
@@ -30,25 +24,22 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: 18 # Or a recent LTS version
+          node-version: 18
           cache: npm
-          # Add cache-dependency-path if lock file isn't at root
-          cache-dependency-path: ./course-scheduler-web/package-lock.json # <-- ADD THIS
+          cache-dependency-path: ./course-scheduler-web/package-lock.json
       - name: Install dependencies
         run: npm install
-        working-directory: ./course-scheduler-web # <-- ADD THIS
+        working-directory: ./course-scheduler-web
       - name: Build
-        run: npm run build # This runs the build script defined in package.json
-        working-directory: ./course-scheduler-web # <-- ADD THIS
+        run: npm run build
+        working-directory: ./course-scheduler-web
       - name: Setup Pages
         uses: actions/configure-pages@v4
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Upload dist folder from the build directory
-          path: ./course-scheduler-web/dist # <-- ADJUST PATH HERE
+          path: ./course-scheduler-web/dist
 
-  # Deployment job
   deploy:
     environment:
       name: github-pages
