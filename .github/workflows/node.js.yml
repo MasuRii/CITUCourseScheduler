@@ -32,17 +32,21 @@ jobs:
         with:
           node-version: 18 # Or a recent LTS version
           cache: npm
+          # Add cache-dependency-path if lock file isn't at root
+          cache-dependency-path: ./course-scheduler-web/package-lock.json # <-- ADD THIS
       - name: Install dependencies
         run: npm install
+        working-directory: ./course-scheduler-web # <-- ADD THIS
       - name: Build
         run: npm run build # This runs the build script defined in package.json
+        working-directory: ./course-scheduler-web # <-- ADD THIS
       - name: Setup Pages
         uses: actions/configure-pages@v4
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Upload dist folder (Vite's default build output)
-          path: ./dist
+          # Upload dist folder from the build directory
+          path: ./course-scheduler-web/dist # <-- ADJUST PATH HERE
 
   # Deployment job
   deploy:
