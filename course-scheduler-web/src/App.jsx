@@ -616,17 +616,27 @@ function App() {
             onRemoveTimeRange={handleRemoveTimeRange}
           />
 
-          <div className="section-type-filters">
-            {SECTION_TYPE_SUFFIXES.map(typeId => (
-              <label key={typeId} className="section-type-checkbox">
-                <input
-                  type="checkbox"
-                  checked={selectedSectionTypes.includes(typeId)}
-                  onChange={(e) => handleSectionTypeChange(typeId, e.target.checked)}
-                />
-                {typeId}
-              </label>
-            ))}
+          <div className="filter-section">
+            <label className="filter-label">Section Types:</label>
+            <div className="section-type-filters">
+              {SECTION_TYPE_SUFFIXES.map(typeId => {
+                let description = "";
+                if (typeId === "AP3") description = "Online Class";
+                if (typeId === "AP4") description = "Face-to-Face";
+                if (typeId === "AP5") description = "Hybrid (F2F & Online)";
+
+                return (
+                  <label key={typeId} className="section-type-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={selectedSectionTypes.includes(typeId)}
+                      onChange={(e) => handleSectionTypeChange(typeId, e.target.checked)}
+                    />
+                    <span>{typeId} - {description}</span>
+                  </label>
+                );
+              })}
+            </div>
           </div>
         </div>
 
