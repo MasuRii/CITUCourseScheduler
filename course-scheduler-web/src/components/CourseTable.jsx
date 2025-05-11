@@ -46,20 +46,20 @@ function CourseTable({ courses, groupingKey, onDeleteCourse, onToggleLockCourse,
         </thead>
         <tbody className="course-table-body">
           {(!courses || (Array.isArray(courses) && courses.length === 0)) && (
-            <tr className="no-data-row">
+            <tr key="no-data" className="no-data-row">
               <td className="data-cell" colSpan={8}>No courses to display.</td>
             </tr>
           )}
 
           {isGrouped && courses.map((group, groupIndex) => (
             <Fragment key={`group-${group.groupValue}-${groupIndex}`}>
-              <tr className="group-header-row">
+              <tr key={`header-${group.groupValue}-${groupIndex}`} className="group-header-row">
                 <td className="group-header-cell" colSpan={8}>
-                  {group.groupValue} ({group.courses.length} {group.courses.length === 1 ? 'course' : 'courses'})
+                  {group.groupValue} ({group.courses?.length || 0} {(!group.courses || group.courses.length === 1) ? 'course' : 'courses'})
                 </td>
               </tr>
-              {group.courses.map((course, courseIndex) => (
-                <tr key={course.id} className={getRowClasses(course, courseIndex, true)}>
+              {group.courses?.map((course, courseIndex) => (
+                <tr key={`course-${course.id}-${courseIndex}`} className={getRowClasses(course, courseIndex, true)}>
                   <td className="data-cell">{course.subject}</td>
                   <td className="data-cell">{course.subjectTitle}</td>
                   <td className="data-cell">{course.creditedUnits || course.units}</td>
@@ -93,7 +93,7 @@ function CourseTable({ courses, groupingKey, onDeleteCourse, onToggleLockCourse,
           ))}
 
           {!isGrouped && Array.isArray(courses) && courses.map((course, index) => (
-            <tr key={course.id} className={getRowClasses(course, index, false)}>
+            <tr key={`course-${course.id}-${index}`} className={getRowClasses(course, index, false)}>
               <td className="data-cell">{course.subject}</td>
               <td className="data-cell">{course.subjectTitle}</td>
               <td className="data-cell">{course.creditedUnits || course.units}</td>

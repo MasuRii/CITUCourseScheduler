@@ -260,7 +260,9 @@ function App() {
     if (groupingKey === 'none') {
       return processedCourses.length;
     }
-    return processedCourses.reduce((sum, group) => sum + group.courses.length, 0);
+    return processedCourses.reduce((sum, group) => {
+      return sum + (group && group.courses ? group.courses.length : 0);
+    }, 0);
   }, [processedCourses, groupingKey]);
 
   const lockedCoursesCount = useMemo(() => {
