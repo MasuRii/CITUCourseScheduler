@@ -3,6 +3,7 @@ import './App.css';
 import CourseTable from './components/CourseTable';
 import RawDataInput from './components/RawDataInput';
 import TimeFilter from './components/TimeFilter';
+import TimetableView from './components/TimetableView';
 import { parseRawCourseData } from './utils/parseRawData';
 import { parseSchedule } from './utils/parseSchedule';
 
@@ -121,6 +122,7 @@ function App() {
   );
   const [processedCourses, setProcessedCourses] = useState([]);
   const [conflictingLockedCourseIds, setConflictingLockedCourseIds] = useState(new Set());
+  const [showTimetable, setShowTimetable] = useState(false);
 
   useEffect(() => { localStorage.setItem(LOCAL_STORAGE_KEYS.COURSES, JSON.stringify(allCourses)); }, [allCourses]);
   useEffect(() => { localStorage.setItem(LOCAL_STORAGE_KEYS.EXCLUDED_DAYS, JSON.stringify(excludedDays)); }, [excludedDays]);
@@ -267,26 +269,32 @@ function App() {
     }, 0);
   }, [processedCourses, groupingKey]);
 
-  const lockedCoursesCount = useMemo(() => {
-    return allCourses.filter(c => c.isLocked).length;
+  const lockedCourses = useMemo(() => {
+    return allCourses.filter(course => course.isLocked);
   }, [allCourses]);
+
+  const lockedCoursesCount = useMemo(() => {
+    return lockedCourses.length;
+  }, [lockedCourses]);
 
   const totalUnits = useMemo(() => {
-    const lockedCourses = allCourses.filter(course => course.isLocked);
     return lockedCourses.reduce((sum, course) => {
-      const units = parseFloat(course.units);
+      const units = parseFloat(course.creditedUnits || course.units);
       return isNaN(units) ? sum : sum + units;
     }, 0);
-  }, [allCourses]);
+  }, [lockedCourses]);
 
   const uniqueSubjects = useMemo(() => {
-    const lockedCourses = allCourses.filter(course => course.isLocked);
     const uniqueSet = new Set();
     lockedCourses.forEach(course => {
       if (course.subject) uniqueSet.add(course.subject);
     });
     return uniqueSet.size;
-  }, [allCourses]);
+  }, [lockedCourses]);
+
+  const toggleTimetable = () => {
+    setShowTimetable(prev => !prev);
+  };
 
   return (
     <>
@@ -328,6 +336,36 @@ function App() {
             </button>
           </div>
         </div>
+
+        {lockedCoursesCount > 0 && (
+          <div className="timetable-section">
+            <div className="section-container">
+              <div className="table-header-controls">
+                <h2>Timetable View</h2>
+                <button
+                  className="toggle-timetable-button"
+                  onClick={toggleTimetable}
+                >
+                  {showTimetable ? 'Hide Timetable' : 'Show Timetable'}
+                </button>
+              </div>
+
+              {showTimetable && (
+                <TimetableView lockedCourses={lockedCourses} />
+              )}
+
+              {!showTimetable && lockedCoursesCount > 0 && (
+                <div className="timetable-summary">
+                  <div className="timetable-totals">
+                    <span><strong>Total Units:</strong> {totalUnits}</span>
+                    <span><strong>Subjects:</strong> {uniqueSubjects}</span>
+                    <span><strong>Locked Courses:</strong> {lockedCoursesCount}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         <div className="section-container">
           <h2>Course Filters</h2>

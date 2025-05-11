@@ -1,0 +1,124 @@
+import React from 'react';
+import { parseSchedule } from '../utils/parseSchedule';
+
+const TIME_SLOTS = [
+    '07:00', '07:30', '08:00', '08:30', '09:00', '09:30',
+    '10:00', '10:30', '11:00', '11:30', '12:00', '12:30',
+    '13:00', '13:30', '14:00', '14:30', '15:00', '15:30',
+    '16:00', '16:30', '17:00', '17:30', '18:00', '18:30',
+    '19:00', '19:30', '20:00'
+];
+
+const DAYS = ['M', 'T', 'W', 'TH', 'F', 'S', 'SU'];
+const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+/**
+ * Component to display a visual timetable for locked courses
+ * 
+ * @param {Object} props Component props
+ * @param {Array} props.lockedCourses Array of locked course objects
+ */
+function TimetableView({ lockedCourses }) {
+    if (!lockedCourses || lockedCourses.length === 0) {
+        return <div className="timetable-empty">No locked courses to display in timetable.</div>;
+    }
+
+    const totalUnits = lockedCourses.reduce((sum, course) => {
+        const units = parseFloat(course.creditedUnits || course.units);
+        return isNaN(units) ? sum : sum + units;
+    }, 0);
+
+    const uniqueSubjects = new Set(lockedCourses.map(course => course.subject)).size;
+
+    const coursesByTimeAndDay = {};
+
+    lockedCourses.forEach(course => {
+        const schedule = parseSchedule(course.schedule);
+        if (!schedule || schedule.isTBA) return;
+
+        const { days, startTime, endTime } = schedule;
+        if (!startTime || !endTime) return;
+
+        days.forEach(day => {
+            for (let i = 0; i < TIME_SLOTS.length; i++) {
+                const timeSlot = TIME_SLOTS[i];
+
+                if (timeSlot >= startTime && timeSlot < endTime) {
+                    if (!coursesByTimeAndDay[timeSlot]) {
+                        coursesByTimeAndDay[timeSlot] = {};
+                    }
+                    if (!coursesByTimeAndDay[timeSlot][day]) {
+                        coursesByTimeAndDay[timeSlot][day] = [];
+                    }
+
+                    const isStartOfCourse = timeSlot === startTime;
+                    coursesByTimeAndDay[timeSlot][day].push({
+                        ...course,
+                        isStartOfCourse
+                    });
+                }
+            }
+        });
+    });
+
+    const renderCourseCell = (courses) => {
+        if (!courses || courses.length === 0) return null;
+
+        const startCourses = courses.filter(c => c.isStartOfCourse);
+        if (startCourses.length === 0) {
+            return <div className="timetable-course-continuation"></div>;
+        }
+
+        return startCourses.map((course, index) => (
+            <div key={`${course.id}-${index}`} className="timetable-course">
+                <div className="timetable-course-subject">{course.subject}</div>
+                <div className="timetable-course-section">{course.section}</div>
+                <div className="timetable-course-room">{course.room}</div>
+            </div>
+        ));
+    };
+
+    return (
+        <div className="timetable-container">
+            <div className="timetable-summary">
+                <div className="timetable-totals">
+                    <span><strong>Total Units:</strong> {totalUnits}</span>
+                    <span><strong>Subjects:</strong> {uniqueSubjects}</span>
+                    <span><strong>Courses:</strong> {lockedCourses.length}</span>
+                </div>
+            </div>
+
+            <div className="timetable-grid">
+                <table className="timetable">
+                    <thead>
+                        <tr>
+                            <th className="time-header">Time</th>
+                            {DAYS.map((day, index) => (
+                                <th key={day} className="day-header">
+                                    <div className="day-code">{day}</div>
+                                    <div className="day-name">{DAY_NAMES[index]}</div>
+                                </th>
+                            ))}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {TIME_SLOTS.map((timeSlot) => (
+                            <tr key={timeSlot} className="time-row">
+                                <td className="time-cell">{timeSlot}</td>
+                                {DAYS.map(day => (
+                                    <td key={`${day}-${timeSlot}`} className="day-cell">
+                                        {coursesByTimeAndDay[timeSlot]?.[day] ?
+                                            renderCourseCell(coursesByTimeAndDay[timeSlot][day]) :
+                                            null}
+                                    </td>
+                                ))}
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+}
+
+export default TimetableView; 
