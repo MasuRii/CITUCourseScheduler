@@ -13,6 +13,19 @@ const DAYS = ['M', 'T', 'W', 'TH', 'F', 'S', 'SU'];
 const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 /**
+ * Converts a 24-hour format time string to 12-hour format with AM/PM
+ * @param {string} timeStr - Time string in "HH:MM" 24-hour format
+ * @returns {string} - Time in 12-hour format (e.g. "1:30 PM")
+ */
+const formatTo12Hour = (timeStr) => {
+    const [hours, minutes] = timeStr.split(':');
+    const hour = parseInt(hours, 10);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const hour12 = hour % 12 || 12;
+    return `${hour12}:${minutes} ${ampm}`;
+};
+
+/**
  * Component to display a visual timetable for locked courses
  * 
  * @param {Object} props Component props
@@ -104,7 +117,7 @@ function TimetableView({ lockedCourses }) {
                     <tbody>
                         {TIME_SLOTS.map((timeSlot) => (
                             <tr key={timeSlot} className="time-row">
-                                <td className="time-cell">{timeSlot}</td>
+                                <td className="time-cell">{formatTo12Hour(timeSlot)}</td>
                                 {DAYS.map(day => (
                                     <td key={`${day}-${timeSlot}`} className="day-cell">
                                         {coursesByTimeAndDay[timeSlot]?.[day] ?
