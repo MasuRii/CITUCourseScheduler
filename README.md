@@ -14,3 +14,19 @@ This tool is designed to:
 *   Save user preferences like theme and filters.
 
 It's a small hobby project, so it's a work in progress!
+
+## Usage Guide
+
+This guide will walk you through how to use the CIT-U Course Builder.
+
+### Step 1: Copying Data from AIMS
+
+Navigate to the AIMS portal and copy the table data as shown below:
+
+![Guide to copying data from AIMS](./course-scheduler-web/src/assets/Guide1.PNG)
+
+### Step 2: Pasting Data into CITUCourseBuilder
+
+Paste the copied table data into the "Import Data" section of the CITUCourseBuilder application:
+
+![Guide to pasting data into CITUCourseBuilder](./course-scheduler-web/src/assets/Guide2.PNG)
