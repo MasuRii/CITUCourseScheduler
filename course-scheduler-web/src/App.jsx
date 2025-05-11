@@ -239,8 +239,10 @@ function App() {
         isLocked: course.isLocked ?? false,
         isClosed: course.isClosed ?? (course.totalSlots > 0 && course.enrolled >= course.totalSlots),
       }));
-      setAllCourses(coursesWithDefaults);
-      alert(`Loaded ${coursesWithDefaults.length} courses!`);
+
+      setAllCourses(prevCourses => [...prevCourses, ...coursesWithDefaults]);
+
+      alert(`Added ${coursesWithDefaults.length} courses!`);
     } catch (error) {
       console.error("Error parsing raw data:", error);
       alert(`Error loading data: ${error.message}`);
