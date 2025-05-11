@@ -190,26 +190,39 @@ function App() {
 
 
   useEffect(() => {
+    console.log('Conflict checking triggered. All courses:', allCourses);
+
     const lockedCourses = allCourses.filter(course => course.isLocked);
+    console.log('Locked courses for conflict check:', lockedCourses);
+
     const conflicts = new Set();
+
 
     for (let i = 0; i < lockedCourses.length; i++) {
       for (let j = i + 1; j < lockedCourses.length; j++) {
         const course1 = lockedCourses[i];
         const course2 = lockedCourses[j];
 
+        console.log(`Checking conflict between locked courses: ${course1.subject}-${course1.section} and ${course2.subject}-${course2.section}`);
+
         const schedule1 = parseSchedule(course1.schedule);
         const schedule2 = parseSchedule(course2.schedule);
 
         if (!schedule1 || schedule1.isTBA || !schedule1.startTime || !schedule1.endTime ||
           !schedule2 || schedule2.isTBA || !schedule2.startTime || !schedule2.endTime) {
+          console.log('Skipping conflict check - one or both schedules are TBA or invalid');
           continue;
         }
 
         const commonDays = schedule1.days.filter(day => schedule2.days.includes(day));
+        console.log('Common days:', commonDays);
 
         if (commonDays.length > 0) {
-          if (checkTimeOverlap(schedule1.startTime, schedule1.endTime, schedule2.startTime, schedule2.endTime)) {
+          const hasTimeOverlap = checkTimeOverlap(schedule1.startTime, schedule1.endTime, schedule2.startTime, schedule2.endTime);
+          console.log(`Time overlap check: ${schedule1.startTime}-${schedule1.endTime} and ${schedule2.startTime}-${schedule2.endTime}: ${hasTimeOverlap}`);
+
+          if (hasTimeOverlap) {
+            console.log(`Conflict detected! Adding ${course1.id} and ${course2.id} to conflicts`);
             conflicts.add(course1.id);
             conflicts.add(course2.id);
           }
@@ -217,6 +230,7 @@ function App() {
       }
     }
 
+    console.log('Final conflict set:', [...conflicts]);
     setConflictingLockedCourseIds(conflicts);
 
   }, [allCourses]);
@@ -246,7 +260,76 @@ function App() {
   };
   const handleDeleteCourse = (id) => { setAllCourses(prev => prev.filter(c => c.id !== id)); };
   const handleDeleteAllCourses = () => { if (!window.confirm("Delete ALL courses? This cannot be undone.")) return; setAllCourses([]); setRawData(''); };
-  const handleToggleLockCourse = (id) => { setAllCourses(prev => prev.map(c => c.id === id ? { ...c, isLocked: !c.isLocked } : c)); };
+  const handleToggleLockCourse = (id) => {
+    console.log('Toggling lock for course ID:', id);
+    const courseBeforeToggle = allCourses.find(c => c.id === id);
+    console.log('Course before toggle:', courseBeforeToggle);
+
+    if (courseBeforeToggle.isLocked) {
+      console.log('Unlocking already locked course');
+      setAllCourses(prev => prev.map(c => c.id === id ? { ...c, isLocked: false } : c));
+      return;
+    }
+
+    const lockedCourses = allCourses.filter(c => c.isLocked);
+    console.log('Current locked courses:', lockedCourses);
+
+    const courseToLock = courseBeforeToggle;
+    const scheduleToLock = parseSchedule(courseToLock.schedule);
+    console.log('Schedule of course to lock:', scheduleToLock);
+
+    if (!scheduleToLock || scheduleToLock.isTBA || !scheduleToLock.startTime || !scheduleToLock.endTime) {
+      console.log('Course has TBA or invalid schedule, skipping conflict check');
+      setAllCourses(prev => prev.map(c => c.id === id ? { ...c, isLocked: true } : c));
+      return;
+    }
+
+    const conflictingCourses = [];
+    for (const lockedCourse of lockedCourses) {
+      console.log(`Checking for conflict with locked course: ${lockedCourse.subject} ${lockedCourse.section}`);
+
+      const lockedSchedule = parseSchedule(lockedCourse.schedule);
+      console.log('Schedule of locked course:', lockedSchedule);
+
+      if (!lockedSchedule || lockedSchedule.isTBA || !lockedSchedule.startTime || !lockedSchedule.endTime) {
+        console.log('Locked course has TBA or invalid schedule, skipping');
+        continue;
+      }
+
+      const commonDays = scheduleToLock.days.filter(day => lockedSchedule.days.includes(day));
+      console.log('Common days:', commonDays);
+
+      if (commonDays.length > 0) {
+        const hasTimeOverlap = checkTimeOverlap(scheduleToLock.startTime, scheduleToLock.endTime, lockedSchedule.startTime, lockedSchedule.endTime);
+        console.log(`Time overlap check: ${scheduleToLock.startTime}-${scheduleToLock.endTime} and ${lockedSchedule.startTime}-${lockedSchedule.endTime}: ${hasTimeOverlap}`);
+
+        if (hasTimeOverlap) {
+          console.log(`Conflict detected with course: ${lockedCourse.subject} ${lockedCourse.section}`);
+          conflictingCourses.push(lockedCourse);
+        }
+      }
+    }
+
+    if (conflictingCourses.length > 0) {
+      console.log('Conflicting courses:', conflictingCourses);
+      const courseNames = conflictingCourses.map(c => `${c.subject} ${c.section}`).join(', ');
+      const confirmMessage = `This course conflicts with ${conflictingCourses.length} locked course(s): ${courseNames}. Do you still want to lock it?`;
+
+      console.log('Showing confirmation dialog:', confirmMessage);
+      if (!window.confirm(confirmMessage)) {
+        console.log('User canceled locking the course');
+        return;
+      }
+      console.log('User confirmed locking the course despite conflicts');
+    }
+
+    console.log('Locking the course');
+    setAllCourses(prev => {
+      const updatedCourses = prev.map(c => c.id === id ? { ...c, isLocked: true } : c);
+      console.log('All courses after locking:', updatedCourses);
+      return updatedCourses;
+    });
+  };
   const handleToggleTheme = () => { setTheme(prev => (prev === 'light' ? 'dark' : 'light')); };
   const handleGroupingChange = (event) => { setGroupingKey(event.target.value); };
   const handleSectionTypeChange = (typeId, isSelected) => { setSelectedSectionTypes(prev => isSelected ? [...new Set([...prev, typeId])] : prev.filter(id => id !== typeId)); };
@@ -402,6 +485,12 @@ function App() {
               </div>
             )}
           </div>
+
+          {conflictingLockedCourseIds.size > 0 && (
+            <div className="conflict-helper-text">
+              Note: Courses highlighted with a red border have schedule conflicts with other locked courses.
+            </div>
+          )}
 
           <CourseTable
             courses={processedCourses}

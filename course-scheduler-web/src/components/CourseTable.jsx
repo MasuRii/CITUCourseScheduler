@@ -20,12 +20,15 @@ function CourseTable({ courses, groupingKey, onDeleteCourse, onToggleLockCourse,
     } else {
       baseClasses.push(index % 2 === 0 ? 'even-row' : 'odd-row');
     }
+
     if (course.isLocked) {
       baseClasses.push('locked-row');
+
       if (conflictingLockedCourseIds && conflictingLockedCourseIds.has(course.id)) {
         baseClasses.push('conflict-highlight');
       }
     }
+
     return baseClasses.join(' ');
   };
 
