@@ -26,12 +26,6 @@ const ALLOWED_GROUPING_KEYS = ['none', 'offeringDept', 'subject'];
 const SECTION_TYPE_SUFFIXES = ['AP3', 'AP4', 'AP5'];
 const ALLOWED_STATUS_FILTERS = ['all', 'open', 'closed'];
 
-const Logo = () => (
-  <svg width="32" height="32" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-    <path d="M21,5c0-1.1-0.9-2-2-2H5C3.9,3,3,3.9,3,5v14c0,1.1,0.9,2,2,2h14c1.1,0,2-0.9,2-2V5z M12,18l-4-4h8L12,18z M12,14l-4-4h8 L12,14z M12,10L8,6h8L12,10z" />
-  </svg>
-);
-
 const loadFromLocalStorage = (key, defaultValue) => {
   if (typeof window === 'undefined' || !window.localStorage) {
     return defaultValue;
@@ -301,8 +295,7 @@ function App() {
       <header className="app-header">
         <div className="App">
           <div className="app-title">
-            <Logo />
-            <h1>CIT-U Course Scheduler</h1>
+            <h1>CIT-U Course Builder</h1>
           </div>
         </div>
       </header>
