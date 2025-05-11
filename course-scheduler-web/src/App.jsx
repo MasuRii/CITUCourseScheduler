@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import './App.css';
 import CourseTable from './components/CourseTable';
 import RawDataInput from './components/RawDataInput';
@@ -117,6 +117,8 @@ function App() {
   const [processedCourses, setProcessedCourses] = useState([]);
   const [conflictingLockedCourseIds, setConflictingLockedCourseIds] = useState(new Set());
   const [showTimetable, setShowTimetable] = useState(false);
+  const [generatedScheduleCount, setGeneratedScheduleCount] = useState(0);
+  const triedScheduleCombinations = useRef(new Set()).current;
 
   useEffect(() => { localStorage.setItem(LOCAL_STORAGE_KEYS.COURSES, JSON.stringify(allCourses)); }, [allCourses]);
   useEffect(() => { localStorage.setItem(LOCAL_STORAGE_KEYS.EXCLUDED_DAYS, JSON.stringify(excludedDays)); }, [excludedDays]);
@@ -374,6 +376,150 @@ function App() {
     setShowTimetable(prev => !prev);
   };
 
+  /**
+   * Generates an optimized schedule based on available courses and user filters
+   */
+  const generateBestSchedule = () => {
+    const unlockedCourses = allCourses.map(c => ({ ...c, isLocked: false }));
+
+    const filteredCourses = unlockedCourses.filter(course => {
+      if (selectedStatusFilter === 'open') { if (course.isClosed === true) return false; }
+      else if (selectedStatusFilter === 'closed') { if (course.isClosed === false) return false; }
+
+      if (selectedSectionTypes.length > 0) {
+        const courseSectionType = getSectionTypeSuffix(course.section);
+        if (!courseSectionType || !selectedSectionTypes.includes(courseSectionType)) return false;
+      }
+
+      const parsedSchedule = parseSchedule(course.schedule);
+      if (!parsedSchedule || parsedSchedule.isTBA) return true;
+
+      const runsOnAnExcludedDay = parsedSchedule.days.some(day => excludedDays.includes(day));
+      if (runsOnAnExcludedDay) return false;
+
+      const overlapsWithAnyExcludedTime = excludedTimeRanges.some(range => {
+        if (range.start && range.end) {
+          const excludedStart = range.start;
+          const excludedEnd = range.end;
+          const courseStart = parsedSchedule.startTime;
+          const courseEnd = parsedSchedule.endTime;
+          if (courseStart && courseEnd) {
+            return checkTimeOverlap(courseStart, courseEnd, excludedStart, excludedEnd);
+          }
+        }
+        return false;
+      });
+      if (overlapsWithAnyExcludedTime) return false;
+
+      return true;
+    });
+
+    const coursesBySubject = filteredCourses.reduce((acc, course) => {
+      if (!acc[course.subject]) {
+        acc[course.subject] = [];
+      }
+      acc[course.subject].push(course);
+      return acc;
+    }, {});
+
+    const generateCombinationKey = (courses) => {
+      return courses.map(c => c.id).sort().join(',');
+    };
+
+    let bestSchedule = [];
+    let bestScore = -1;
+    let maxAttempts = 1000;
+    let attempts = 0;
+
+    while (attempts < maxAttempts) {
+      attempts++;
+
+      let currentSchedule = [];
+
+      Object.values(coursesBySubject).forEach(subjectCourses => {
+        const shuffledCourses = [...subjectCourses].sort(() => Math.random() - 0.5);
+
+        for (const course of shuffledCourses) {
+          const courseSchedule = parseSchedule(course.schedule);
+          if (!courseSchedule || courseSchedule.isTBA) {
+            currentSchedule.push(course);
+            break;
+          }
+
+          let hasConflict = false;
+          for (const existingCourse of currentSchedule) {
+            const existingSchedule = parseSchedule(existingCourse.schedule);
+            if (!existingSchedule || existingSchedule.isTBA) continue;
+
+            const commonDays = courseSchedule.days.filter(day =>
+              existingSchedule.days.includes(day)
+            );
+
+            if (commonDays.length > 0) {
+              if (checkTimeOverlap(
+                courseSchedule.startTime, courseSchedule.endTime,
+                existingSchedule.startTime, existingSchedule.endTime
+              )) {
+                hasConflict = true;
+                break;
+              }
+            }
+          }
+
+          if (!hasConflict) {
+            currentSchedule.push(course);
+            break;
+          }
+        }
+      });
+
+      const scheduleKey = generateCombinationKey(currentSchedule);
+
+      if (triedScheduleCombinations.has(scheduleKey)) {
+        continue;
+      }
+
+      triedScheduleCombinations.add(scheduleKey);
+
+      const totalCourses = currentSchedule.length;
+      const totalUnits = currentSchedule.reduce((sum, course) => {
+        const units = parseFloat(course.creditedUnits || course.units);
+        return isNaN(units) ? sum : sum + units;
+      }, 0);
+
+      const score = totalCourses * 100 + totalUnits;
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestSchedule = currentSchedule;
+      }
+
+      if (bestSchedule.length === Object.keys(coursesBySubject).length) {
+        break;
+      }
+    }
+
+    if (bestSchedule.length > 0) {
+      const bestScheduleIds = new Set(bestSchedule.map(course => course.id));
+
+      setAllCourses(prev => prev.map(course => ({
+        ...course,
+        isLocked: bestScheduleIds.has(course.id)
+      })));
+
+      setGeneratedScheduleCount(prev => prev + 1);
+      alert(`Generated schedule #${generatedScheduleCount + 1} with ${bestSchedule.length} courses (${bestScore - bestSchedule.length * 100} units)`);
+    } else {
+      alert("Couldn't generate a valid schedule with current filters");
+    }
+  };
+
+  const handleClearGeneratedSchedules = () => {
+    triedScheduleCombinations.clear();
+    setGeneratedScheduleCount(0);
+    handleClearAllLocks();
+  };
+
   return (
     <>
       <header className="app-header">
@@ -390,6 +536,21 @@ function App() {
             <button className="theme-toggle-button" onClick={handleToggleTheme}>
               {theme === 'light' ? '🌙 Switch to Dark Mode' : '☀️ Switch to Light Mode'}
             </button>
+          </div>
+
+          <div className="auto-schedule-controls">
+            <button
+              className="generate-schedule-button"
+              onClick={generateBestSchedule}
+              disabled={allCourses.length === 0}
+            >
+              {generatedScheduleCount === 0 ? 'Generate Best Schedule' : `Generate Next Best Schedule (#${generatedScheduleCount + 1})`}
+            </button>
+            {generatedScheduleCount > 0 && (
+              <button onClick={handleClearGeneratedSchedules}>
+                Reset Schedule Generator
+              </button>
+            )}
           </div>
 
           <div className="status-filter-controls">
