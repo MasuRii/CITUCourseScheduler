@@ -289,25 +289,45 @@ button:focus-visible {
 }
 
 .add-range-button {
-  margin-top: var(--space-3);
-}
-
-.remove-range-button {
-  background-color: transparent;
-  border: none;
-  color: var(--danger-button-bg);
-  padding: var(--space-2);
-  width: 30px;
-  height: 30px;
+  margin-top: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  background-color: var(--button-bg);
+  color: var(--link-color);
+  border: 1px dashed var(--input-border);
+  border-radius: 6px;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.add-range-button:hover {
+  background-color: var(--button-hover-bg);
+  transform: translateY(-1px);
+}
+
+.remove-range-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
+  border: none;
+  background-color: var(--danger-button-bg);
+  color: var(--danger-button-text);
   cursor: pointer;
+  font-size: var(--font-size-xs);
+  transition: all 0.2s ease;
+  padding: 0;
 }
 
 .remove-range-button:hover {
-  color: var(--danger-button-hover-bg);
+  background-color: var(--danger-button-hover-bg);
+  transform: translateY(-1px);
 }
 
 [data-theme="dark"] .remove-range-button {
@@ -522,35 +542,75 @@ button:focus-visible {
   border-radius: 2px;
 }
 
+.time-ranges-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+  background-color: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: 6px;
+  padding: var(--space-3);
+}
+
 .time-range-row {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  margin-bottom: var(--space-3);
-  flex-wrap: wrap;
+  padding: var(--space-2);
+  border-radius: 6px;
+  position: relative;
+  transition: background-color 0.2s ease;
+}
+
+.time-range-row:hover {
+  background-color: var(--filter-bg);
 }
 
 .time-range-index {
-  min-width: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-weight: var(--font-weight-bold);
-  color: var(--text-muted-color);
+  width: 28px;
+  height: 28px;
+  background-color: var(--button-bg);
+  border-radius: 50%;
+  color: var(--button-text);
+  font-size: var(--font-size-sm);
+}
+
+.time-picker-container {
+  display: flex;
+  flex-wrap: wrap;
+  flex: 1;
+  align-items: center;
+  gap: var(--space-3);
 }
 
 .time-input-label {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  flex-grow: 1;
+  gap: var(--space-1);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
 }
 
 .time-input {
   padding: var(--space-2) var(--space-3);
   border: 1px solid var(--input-border);
-  border-radius: 6px;
-  background-color: var(--input-bg);
-  color: var(--input-text);
-  width: 100%;
+  border-radius: 4px;
   font-family: var(--font-family-base);
+  font-size: var(--font-size-sm);
+  color: var(--input-text);
+  background-color: var(--input-bg);
+  transition: border-color 0.2s ease;
+  width: 100px;
+}
+
+.time-input:focus-visible {
+  outline: var(--focus-outline-width) var(--focus-outline-style) var(--focus-outline-color);
+  outline-offset: var(--focus-outline-offset);
 }
 
 [data-theme="dark"] .time-input::-webkit-calendar-picker-indicator {

@@ -85,59 +85,63 @@ function TimeFilter({
 
       <div className="filter-section">
         <label className="filter-label">Exclude Time Ranges:</label>
-        {ranges.map((range, index) => (
-          <div key={range.id} className="time-range-row">
-            <span className="time-range-index">{index + 1}</span>
-            <div className="time-picker-wrapper">
-              <label className="time-input-label">
-                <span>From:</span>
-                <DatePicker
-                  selected={timeStringToDate(range.start)}
-                  onChange={(date) => handleTimeChange(range.id, 'start', date)}
-                  showTimeSelect
-                  showTimeSelectOnly
-                  timeIntervals={30}
-                  minTime={minSelectableTime}
-                  maxTime={maxSelectableTime}
-                  timeCaption="Time"
-                  dateFormat="h:mm aa"
-                  className="time-input react-datepicker-input"
-                  placeholderText="Start time"
-                  autoComplete="off"
-                />
-              </label>
+        <div className="time-ranges-container">
+          {ranges.map((range, index) => (
+            <div key={range.id} className="time-range-row">
+              <span className="time-range-index">{index + 1}</span>
+              <div className="time-picker-container">
+                <div className="time-picker-wrapper">
+                  <label className="time-input-label">
+                    <span>From:</span>
+                    <DatePicker
+                      selected={timeStringToDate(range.start)}
+                      onChange={(date) => handleTimeChange(range.id, 'start', date)}
+                      showTimeSelect
+                      showTimeSelectOnly
+                      timeIntervals={30}
+                      minTime={minSelectableTime}
+                      maxTime={maxSelectableTime}
+                      timeCaption="Time"
+                      dateFormat="h:mm aa"
+                      className="time-input react-datepicker-input"
+                      placeholderText="Start time"
+                      autoComplete="off"
+                    />
+                  </label>
+                </div>
+                <div className="time-picker-wrapper">
+                  <label className="time-input-label">
+                    <span>To:</span>
+                    <DatePicker
+                      selected={timeStringToDate(range.end)}
+                      onChange={(date) => handleTimeChange(range.id, 'end', date)}
+                      showTimeSelect
+                      showTimeSelectOnly
+                      timeIntervals={30}
+                      minTime={minSelectableTime}
+                      maxTime={maxSelectableTime}
+                      timeCaption="Time"
+                      dateFormat="h:mm aa"
+                      className="time-input react-datepicker-input"
+                      placeholderText="End time"
+                      autoComplete="off"
+                    />
+                  </label>
+                </div>
+                {ranges.length > 1 && (
+                  <button
+                    type="button"
+                    className="remove-range-button"
+                    onClick={() => onRemoveTimeRange(range.id)}
+                    aria-label={`Remove time range ${index + 1}`}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
             </div>
-            <div className="time-picker-wrapper">
-              <label className="time-input-label">
-                <span>To:</span>
-                <DatePicker
-                  selected={timeStringToDate(range.end)}
-                  onChange={(date) => handleTimeChange(range.id, 'end', date)}
-                  showTimeSelect
-                  showTimeSelectOnly
-                  timeIntervals={30}
-                  minTime={minSelectableTime}
-                  maxTime={maxSelectableTime}
-                  timeCaption="Time"
-                  dateFormat="h:mm aa"
-                  className="time-input react-datepicker-input"
-                  placeholderText="End time"
-                  autoComplete="off"
-                />
-              </label>
-            </div>
-            {ranges.length > 1 && (
-              <button
-                type="button"
-                className="remove-range-button"
-                onClick={() => onRemoveTimeRange(range.id)}
-                aria-label={`Remove time range ${index + 1}`}
-              >
-                ✕
-              </button>
-            )}
-          </div>
-        ))}
+          ))}
+        </div>
         <button type="button" onClick={onAddTimeRange} className="add-range-button">
           + Add Time Range
         </button>

@@ -68,7 +68,7 @@ const loadFromLocalStorage = (key, defaultValue) => {
     if (key === LOCAL_STORAGE_KEYS.GROUPING) return 'subject';
     if (key === LOCAL_STORAGE_KEYS.THEME) return 'dark';
     if (key === LOCAL_STORAGE_KEYS.SECTION_TYPES) return [];
-    if (key === LOCAL_STORAGE_KEYS.STATUS_FILTER) return 'all';
+    if (key === LOCAL_STORAGE_KEYS.STATUS_FILTER) return 'open';
     if (key === LOCAL_STORAGE_KEYS.COURSES) return [];
     if (key === LOCAL_STORAGE_KEYS.EXCLUDED_DAYS) return [];
     if (key === LOCAL_STORAGE_KEYS.EXCLUDED_RANGES) return [{ id: Date.now(), start: '', end: '' }];
@@ -117,7 +117,7 @@ function App() {
     loadFromLocalStorage(LOCAL_STORAGE_KEYS.SECTION_TYPES, [])
   );
   const [selectedStatusFilter, setSelectedStatusFilter] = useState(() =>
-    loadFromLocalStorage(LOCAL_STORAGE_KEYS.STATUS_FILTER, 'all')
+    loadFromLocalStorage(LOCAL_STORAGE_KEYS.STATUS_FILTER, 'open')
   );
   const [processedCourses, setProcessedCourses] = useState([]);
   const [conflictingLockedCourseIds, setConflictingLockedCourseIds] = useState(new Set());
@@ -292,7 +292,7 @@ function App() {
         <div className="App">
           <div className="app-title">
             <Logo />
-            <h1>CITU Course Scheduler</h1>
+            <h1>CIT-U Course Scheduler</h1>
           </div>
         </div>
       </header>
