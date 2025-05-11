@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
 :root {
   --space-1: 4px;
   --space-2: 8px;
@@ -96,8 +98,6 @@
 
   --focus-outline-color: var(--link-color);
 }
-
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 body {
   margin: 0;
@@ -322,6 +322,7 @@ button:focus-visible {
 
 .course-table {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: var(--font-size-sm);
   margin-bottom: var(--space-4);
@@ -344,8 +345,10 @@ button:focus-visible {
 .course-table td.data-cell {
   padding: var(--space-3);
   border-bottom: 1px solid var(--border-color);
-  white-space: nowrap;
-  overflow: hidden;
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
   text-overflow: ellipsis;
 }
 
@@ -369,7 +372,8 @@ button:focus-visible {
 .course-table td:nth-child(4),
 .course-table td:nth-child(5),
 .course-table td:nth-child(6) {
-  white-space: nowrap;
+  white-space: normal;
+  word-break: break-word;
 }
 
 .course-table th:nth-child(1),
@@ -378,7 +382,8 @@ button:focus-visible {
 .course-table th:nth-child(4),
 .course-table th:nth-child(5),
 .course-table th:nth-child(6) {
-  white-space: nowrap;
+  white-space: normal;
+  word-break: break-word;
 }
 
 .course-table th.actions-header,
@@ -458,9 +463,11 @@ button:focus-visible {
 .table-container {
   max-height: 600px;
   overflow-y: auto;
+  overflow-x: hidden;
   border-radius: 8px;
   position: relative;
   margin-bottom: var(--space-4);
+  width: 100%;
 }
 
 .time-filter {
@@ -770,12 +777,13 @@ input[type="time"]:focus-visible {
   .table-container {
     margin-bottom: var(--space-3);
     max-height: 500px;
+    overflow-x: hidden;
   }
 
   .course-table {
-    display: block;
+    display: table;
     width: 100%;
-    overflow-x: auto;
+    table-layout: fixed;
   }
 
   .course-table thead,
