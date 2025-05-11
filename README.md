@@ -17,8 +17,6 @@ It's a small hobby project, so it's a work in progress!
 
 ## Usage Guide
 
-This guide will walk you through how to use the CIT-U Course Builder.
-
 ### Step 1: Copying Data from AIMS
 
 Navigate to the AIMS portal and copy the table data as shown below:
