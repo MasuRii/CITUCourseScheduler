@@ -44,7 +44,7 @@ const createTimeDate = (hours, minutes) => {
 };
 
 const minSelectableTime = createTimeDate(7, 30);
-const maxSelectableTime = createTimeDate(21, 0);
+const maxSelectableTime = createTimeDate(22, 0);
 
 
 /**
