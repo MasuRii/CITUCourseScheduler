@@ -385,13 +385,13 @@ button:focus-visible {
 }
 
 .course-table-header tr {
-  background-color: var(--header-bg);
   color: var(--header-text);
   font-weight: var(--font-weight-bold);
 }
 
 .course-table th.header-cell {
   text-align: left;
+  background-color: var(--header-bg);
 }
 
 .course-table th.header-cell,
