@@ -260,6 +260,7 @@ function App() {
   };
   const handleDeleteCourse = (id) => { setAllCourses(prev => prev.filter(c => c.id !== id)); };
   const handleDeleteAllCourses = () => { if (!window.confirm("Delete ALL courses? This cannot be undone.")) return; setAllCourses([]); setRawData(''); };
+  const handleClearAllLocks = () => { if (!window.confirm("Clear ALL locks? This will unlock all courses.")) return; setAllCourses(prev => prev.map(c => ({ ...c, isLocked: false }))); };
   const handleToggleLockCourse = (id) => {
     console.log('Toggling lock for course ID:', id);
     const courseBeforeToggle = allCourses.find(c => c.id === id);
@@ -501,6 +502,7 @@ function App() {
           />
 
           <div className="table-action-controls">
+            <button onClick={handleClearAllLocks}>Clear All Locks</button>
             <button className="danger-button" onClick={handleDeleteAllCourses}>Delete All Courses</button>
           </div>
 
