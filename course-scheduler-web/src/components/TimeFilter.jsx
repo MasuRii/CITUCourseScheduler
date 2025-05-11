@@ -4,17 +4,6 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 
 const availableDays = ['M', 'T', 'W', 'TH', 'F', 'S'];
-const availableSectionTypes = [
-  { id: 'AP3', label: 'Online (AP3)' },
-  { id: 'AP4', label: 'Face-to-Face (AP4)' },
-  { id: 'AP5', label: 'Hybrid (AP5)' },
-];
-const statusFilterOptions = [
-  { value: 'all', label: 'Show All' },
-  { value: 'open', label: 'Open Only' },
-  { value: 'closed', label: 'Closed Only' },
-];
-
 
 /**
  * @typedef {object} TimeRange
@@ -59,7 +48,7 @@ const maxSelectableTime = createTimeDate(21, 0);
 
 
 /**
- * Component for selecting various filters.
+ * Component for selecting day and time filters.
  */
 function TimeFilter({
   excludedDays,
@@ -68,14 +57,8 @@ function TimeFilter({
   onTimeRangeChange,
   onAddTimeRange,
   onRemoveTimeRange,
-  selectedSectionTypes,
-  onSectionTypeChange,
-  selectedStatusFilter,
-  onStatusFilterChange,
 }) {
-
   const ranges = Array.isArray(excludedTimeRanges) ? excludedTimeRanges : [];
-  const currentSelectedTypes = Array.isArray(selectedSectionTypes) ? selectedSectionTypes : [];
 
   const handleTimeChange = (id, field, date) => {
     const timeString = dateToTimeString(date);
@@ -104,10 +87,10 @@ function TimeFilter({
         <label className="filter-label">Exclude Time Ranges:</label>
         {ranges.map((range, index) => (
           <div key={range.id} className="time-range-row">
-            <span className="time-range-index">Range {index + 1}:</span>
+            <span className="time-range-index">{index + 1}</span>
             <div className="time-picker-wrapper">
               <label className="time-input-label">
-                From:
+                <span>From:</span>
                 <DatePicker
                   selected={timeStringToDate(range.start)}
                   onChange={(date) => handleTimeChange(range.id, 'start', date)}
@@ -126,7 +109,7 @@ function TimeFilter({
             </div>
             <div className="time-picker-wrapper">
               <label className="time-input-label">
-                To:
+                <span>To:</span>
                 <DatePicker
                   selected={timeStringToDate(range.end)}
                   onChange={(date) => handleTimeChange(range.id, 'end', date)}
@@ -150,50 +133,15 @@ function TimeFilter({
                 onClick={() => onRemoveTimeRange(range.id)}
                 aria-label={`Remove time range ${index + 1}`}
               >
-                ×
+                ✕
               </button>
             )}
           </div>
         ))}
         <button type="button" onClick={onAddTimeRange} className="add-range-button">
-          + Add Excluded Time Range
+          + Add Time Range
         </button>
       </div>
-
-      <div className="filter-section">
-        <label className="filter-label">Filter by Section Type:</label>
-        <div className="section-type-checkboxes">
-          {availableSectionTypes.map((type) => (
-            <label key={type.id} className="section-type-label">
-              <input
-                type="checkbox"
-                checked={currentSelectedTypes.includes(type.id)}
-                onChange={(e) => onSectionTypeChange(type.id, e.target.checked)}
-              />
-              <span>{type.label}</span>
-            </label>
-          ))}
-        </div>
-      </div>
-
-      <div className="filter-section">
-        <label className="filter-label">Filter by Status:</label>
-        <div className="status-radio-buttons">
-          {statusFilterOptions.map((option) => (
-            <label key={option.value} className="status-label">
-              <input
-                type="radio"
-                name="statusFilter"
-                value={option.value}
-                checked={selectedStatusFilter === option.value}
-                onChange={(e) => onStatusFilterChange(e.target.value)}
-              />
-              <span>{option.label}</span>
-            </label>
-          ))}
-        </div>
-      </div>
-
     </div>
   );
 }

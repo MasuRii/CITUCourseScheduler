@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import CourseTable from './components/CourseTable';
-import TimeFilter from './components/TimeFilter';
-import RawDataInput from './components/RawDataInput';
-import { parseSchedule } from './utils/parseSchedule';
-import { parseRawCourseData } from './utils/parseRawData';
+import React, { useEffect, useMemo, useState } from 'react';
 import './App.css';
+import CourseTable from './components/CourseTable';
+import RawDataInput from './components/RawDataInput';
+import TimeFilter from './components/TimeFilter';
+import { parseRawCourseData } from './utils/parseRawData';
+import { parseSchedule } from './utils/parseSchedule';
 
 /**
  * @typedef {import('./components/TimeFilter').TimeRange} TimeRange
@@ -24,6 +24,12 @@ const LOCAL_STORAGE_KEYS = {
 const ALLOWED_GROUPING_KEYS = ['none', 'offeringDept', 'subject'];
 const SECTION_TYPE_SUFFIXES = ['AP3', 'AP4', 'AP5'];
 const ALLOWED_STATUS_FILTERS = ['all', 'open', 'closed'];
+
+const Logo = () => (
+  <svg width="32" height="32" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <path d="M21,5c0-1.1-0.9-2-2-2H5C3.9,3,3,3.9,3,5v14c0,1.1,0.9,2,2,2h14c1.1,0,2-0.9,2-2V5z M12,18l-4-4h8L12,18z M12,14l-4-4h8 L12,14z M12,10L8,6h8L12,10z" />
+  </svg>
+);
 
 const loadFromLocalStorage = (key, defaultValue) => {
   if (typeof window === 'undefined' || !window.localStorage) {
@@ -123,6 +129,10 @@ function App() {
   useEffect(() => { localStorage.setItem(LOCAL_STORAGE_KEYS.GROUPING, JSON.stringify(groupingKey)); }, [groupingKey]);
   useEffect(() => { localStorage.setItem(LOCAL_STORAGE_KEYS.SECTION_TYPES, JSON.stringify(selectedSectionTypes)); }, [selectedSectionTypes]);
   useEffect(() => { localStorage.setItem(LOCAL_STORAGE_KEYS.STATUS_FILTER, JSON.stringify(selectedStatusFilter)); }, [selectedStatusFilter]);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', 'dark');
+  }, []);
 
   useEffect(() => {
     const filtered = allCourses.filter(course => {
@@ -249,96 +259,145 @@ function App() {
     if (!Array.isArray(processedCourses)) return 0;
     if (groupingKey === 'none') {
       return processedCourses.length;
-    } else {
-      return processedCourses.reduce((sum, group) => sum + (group?.courses?.length || 0), 0);
     }
+    return processedCourses.reduce((sum, group) => sum + group.courses.length, 0);
   }, [processedCourses, groupingKey]);
 
-  const totalCreditedUnits = useMemo(() => {
-    let total = 0;
-    if (!Array.isArray(processedCourses)) return 0;
-    const coursesToSum = groupingKey === 'none' ? processedCourses : processedCourses.flatMap(group => group.courses || []);
-    coursesToSum.forEach(course => { total += Number(course.creditedUnits) || 0; });
-    return total;
-  }, [processedCourses, groupingKey]);
+  const lockedCoursesCount = useMemo(() => {
+    return allCourses.filter(c => c.isLocked).length;
+  }, [allCourses]);
 
-  const uniqueSubjectCreditedUnits = useMemo(() => {
-    let total = 0;
-    const countedSubjects = new Set();
-    if (!Array.isArray(processedCourses)) return 0;
-    const coursesToSum = groupingKey === 'none' ? processedCourses : processedCourses.flatMap(group => group.courses || []);
+  const totalUnits = useMemo(() => {
+    const lockedCourses = allCourses.filter(course => course.isLocked);
+    return lockedCourses.reduce((sum, course) => {
+      const units = parseFloat(course.units);
+      return isNaN(units) ? sum : sum + units;
+    }, 0);
+  }, [allCourses]);
 
-    coursesToSum.forEach(course => {
-      if (course && course.subject && !countedSubjects.has(course.subject)) {
-        total += Number(course.creditedUnits) || 0;
-        countedSubjects.add(course.subject);
-      }
+  const uniqueSubjects = useMemo(() => {
+    const lockedCourses = allCourses.filter(course => course.isLocked);
+    const uniqueSet = new Set();
+    lockedCourses.forEach(course => {
+      if (course.subject) uniqueSet.add(course.subject);
     });
-    return total;
-  }, [processedCourses, groupingKey]);
-
+    return uniqueSet.size;
+  }, [allCourses]);
 
   return (
-    <div className="App" data-theme={theme}>
-      <div className="header-controls">
-        <h1>CITU AIMS Course Scheduler</h1>
-        <button onClick={handleToggleTheme} className="theme-toggle-button">
-          Switch to {theme === 'light' ? 'Dark' : 'Light'} Mode
-        </button>
-      </div>
+    <>
+      <header className="app-header">
+        <div className="App">
+          <div className="app-title">
+            <Logo />
+            <h1>CITU Course Scheduler</h1>
+          </div>
+        </div>
+      </header>
 
-      <RawDataInput rawData={rawData} onRawDataChange={setRawData} onLoadData={handleLoadRawData} />
-      <hr />
-      <div className="filter-controls-container section-container">
-        <h2>Filters</h2>
-        <TimeFilter
-          excludedDays={excludedDays}
-          onDayChange={handleDayChange}
-          excludedTimeRanges={excludedTimeRanges}
-          onTimeRangeChange={handleTimeRangeChange}
-          onAddTimeRange={handleAddTimeRange}
-          onRemoveTimeRange={handleRemoveTimeRange}
-          selectedSectionTypes={selectedSectionTypes}
-          onSectionTypeChange={handleSectionTypeChange}
-          selectedStatusFilter={selectedStatusFilter}
-          onStatusFilterChange={handleStatusFilterChange}
-        />
-      </div>
-      <hr />
-      <div className="table-container section-container">
-        <div className="table-header-controls">
-          <h2>
-            Available Courses ({displayedCount} showing / {allCourses.length} total)
-            <span className="total-units-display" style={{ marginLeft: '1em', fontWeight: 'normal' }}>
-              | Total Units: {totalCreditedUnits}
-            </span>
-            <span className="unique-units-display" style={{ marginLeft: '1em', fontWeight: 'normal' }}>
-              | Unique Subject Units: {uniqueSubjectCreditedUnits}
-            </span>
-          </h2>
-
-          <div className="table-action-controls">
-            <div className="grouping-controls">
-              <label htmlFor="grouping-select">Group by: </label>
-              <select id="grouping-select" value={groupingKey} onChange={handleGroupingChange}>
-                <option value="none">None</option>
-                <option value="offeringDept">Offering Dept.</option>
-                <option value="subject">Subject</option>
-              </select>
-            </div>
-            {allCourses.length > 0 && (<button onClick={handleDeleteAllCourses} className="delete-all-button danger-button"> Delete All Courses </button>)}
+      <div className="App">
+        <div className="header-controls">
+          <div className="app-controls">
+            <button className="theme-toggle-button" onClick={handleToggleTheme}>
+              {theme === 'light' ? '🌙 Switch to Dark Mode' : '☀️ Switch to Light Mode'}
+            </button>
           </div>
 
+          <div className="status-filter-controls">
+            <button
+              className={`status-filter-button ${selectedStatusFilter === 'all' ? 'selected' : ''}`}
+              onClick={() => handleStatusFilterChange('all')}
+            >
+              All Courses
+            </button>
+            <button
+              className={`status-filter-button ${selectedStatusFilter === 'open' ? 'selected' : ''}`}
+              onClick={() => handleStatusFilterChange('open')}
+            >
+              Open Only
+            </button>
+            <button
+              className={`status-filter-button ${selectedStatusFilter === 'closed' ? 'selected' : ''}`}
+              onClick={() => handleStatusFilterChange('closed')}
+            >
+              Closed Only
+            </button>
+          </div>
         </div>
-        <CourseTable
-          courses={processedCourses}
-          groupingKey={groupingKey}
-          onDeleteCourse={handleDeleteCourse}
-          onToggleLock={handleToggleLockCourse}
-          conflictingLockedCourseIds={conflictingLockedCourseIds}
-        />
+
+        <div className="section-container">
+          <h2>Course Filters</h2>
+          <TimeFilter
+            excludedDays={excludedDays}
+            excludedTimeRanges={excludedTimeRanges}
+            onDayChange={handleDayChange}
+            onTimeRangeChange={handleTimeRangeChange}
+            onAddTimeRange={handleAddTimeRange}
+            onRemoveTimeRange={handleRemoveTimeRange}
+          />
+
+          <div className="section-type-filters">
+            {SECTION_TYPE_SUFFIXES.map(typeId => (
+              <label key={typeId} className="section-type-checkbox">
+                <input
+                  type="checkbox"
+                  checked={selectedSectionTypes.includes(typeId)}
+                  onChange={(e) => handleSectionTypeChange(typeId, e.target.checked)}
+                />
+                {typeId}
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <div className="section-container">
+          <div className="table-header-controls">
+            <h2>Course List</h2>
+            <div className="grouping-controls">
+              <label>Group by:</label>
+              <select value={groupingKey} onChange={handleGroupingChange}>
+                <option value="none">None</option>
+                <option value="subject">Subject</option>
+                <option value="offeringDept">Department</option>
+              </select>
+            </div>
+            {totalUnits > 0 && (
+              <div className="total-units-display">
+                {totalUnits} units ({uniqueSubjects} subjects) - {lockedCoursesCount} courses
+              </div>
+            )}
+          </div>
+
+          <CourseTable
+            courses={processedCourses}
+            groupingKey={groupingKey}
+            onDeleteCourse={handleDeleteCourse}
+            onToggleLockCourse={handleToggleLockCourse}
+            conflictingLockedCourseIds={conflictingLockedCourseIds}
+          />
+
+          <div className="table-action-controls">
+            <button className="danger-button" onClick={handleDeleteAllCourses}>Delete All Courses</button>
+          </div>
+
+          <div>
+            <span>Showing {displayedCount} courses</span>
+            {displayedCount !== allCourses.length && (
+              <span> (filtered from {allCourses.length} total)</span>
+            )}
+          </div>
+        </div>
+
+        <div className="section-container">
+          <h2>Import Data</h2>
+          <RawDataInput
+            value={rawData}
+            onChange={(e) => setRawData(e.target.value)}
+            onSubmit={handleLoadRawData}
+          />
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 

@@ -1,33 +1,28 @@
-import React from 'react';
 import PropTypes from 'prop-types';
+import React from 'react';
 
-function RawDataInput({ rawData, onRawDataChange, onLoadData }) {
+function RawDataInput({ value, onChange, onSubmit }) {
   return (
-    <div className="raw-data-input section-container">
-      <h2>Load Schedule from AIMS</h2>
-      <label htmlFor="rawData" style={{ display: 'block', marginBottom: '5px' }}>
-        Paste tab-separated schedule data here:
-      </label>
+    <div className="raw-data-input">
+      <p className="input-description">
+        Paste tab-separated schedule data from AIMS into the field below to import courses.
+      </p>
       <textarea
-        id="rawData"
-        rows="10"
-        cols="80"
-        value={rawData}
-        onChange={(e) => onRawDataChange(e.target.value)}
-        placeholder="Go to -> https://cituweb.pinnacle.com.ph/aims/students/sections.php?mainID=102&menuDesc=Section%20Offering for the schedules."
-        style={{ width: '100%', marginBottom: '10px', display: 'block', fontVariantLigatures: 'none' }}
+        value={value}
+        onChange={onChange}
+        placeholder="Go to AIMS -> Section Offering and copy-paste the table data here"
       />
-      <button onClick={onLoadData}>
-        Load Data
+      <button onClick={onSubmit} className="submit-button">
+        Import Data
       </button>
     </div>
   );
 }
 
 RawDataInput.propTypes = {
-  rawData: PropTypes.string.isRequired,
-  onRawDataChange: PropTypes.func.isRequired,
-  onLoadData: PropTypes.func.isRequired,
+  value: PropTypes.string.isRequired,
+  onChange: PropTypes.func.isRequired,
+  onSubmit: PropTypes.func.isRequired,
 };
 
 export default RawDataInput;
