@@ -95,6 +95,48 @@ function checkTimeOverlap(start1, end1, start2, end2) {
   return start1 < end2 && end1 > start2;
 }
 
+/**
+ * Checks if a given schedule (array of course objects) is conflict-free.
+ * @param {Course[]} scheduleToTest - Array of course objects.
+ * @param {function} parseFn - The parseSchedule function.
+ * @param {function} overlapFn - The checkTimeOverlap function.
+ * @returns {boolean} True if the schedule is conflict-free, false otherwise.
+ */
+function isScheduleConflictFree(scheduleToTest, parseFn, overlapFn) {
+  if (!scheduleToTest || scheduleToTest.length <= 1) {
+    return true;
+  }
+
+  for (let i = 0; i < scheduleToTest.length; i++) {
+    for (let j = i + 1; j < scheduleToTest.length; j++) {
+      const course1 = scheduleToTest[i];
+      const course2 = scheduleToTest[j];
+
+      const schedule1Result = parseFn(course1.schedule);
+      const schedule2Result = parseFn(course2.schedule);
+
+      if (!schedule1Result || schedule1Result.isTBA || !schedule1Result.allTimeSlots || schedule1Result.allTimeSlots.length === 0 ||
+        !schedule2Result || schedule2Result.isTBA || !schedule2Result.allTimeSlots || schedule2Result.allTimeSlots.length === 0) {
+        continue;
+      }
+
+      for (const slot1 of schedule1Result.allTimeSlots) {
+        for (const slot2 of schedule2Result.allTimeSlots) {
+          const commonDays = slot1.days.filter(day => slot2.days.includes(day));
+
+          if (commonDays.length > 0) {
+            if (slot1.startTime && slot1.endTime && slot2.startTime && slot2.endTime) {
+              if (overlapFn(slot1.startTime, slot1.endTime, slot2.startTime, slot2.endTime)) {
+                return false;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  return true;
+}
 
 function App() {
   const [allCourses, setAllCourses] = useState(() => loadFromLocalStorage(LOCAL_STORAGE_KEYS.COURSES, []));
@@ -144,25 +186,36 @@ function App() {
         if (!courseSectionType || !selectedSectionTypes.includes(courseSectionType)) return false;
       }
 
-      const parsedSchedule = parseSchedule(course.schedule);
-      if (!parsedSchedule || parsedSchedule.isTBA) return true;
+      const parsedScheduleResult = parseSchedule(course.schedule);
+      if (!parsedScheduleResult || parsedScheduleResult.isTBA) return true;
 
-      const runsOnAnExcludedDay = parsedSchedule.days.some(day => excludedDays.includes(day));
-      if (runsOnAnExcludedDay) return false;
+      if (!parsedScheduleResult.allTimeSlots || parsedScheduleResult.allTimeSlots.length === 0) {
+        return true;
+      }
 
-      const overlapsWithAnyExcludedTime = excludedTimeRanges.some(range => {
-        if (range.start && range.end) {
-          const excludedStart = range.start;
-          const excludedEnd = range.end;
-          const courseStart = parsedSchedule.startTime;
-          const courseEnd = parsedSchedule.endTime;
-          if (courseStart && courseEnd) {
-            return checkTimeOverlap(courseStart, courseEnd, excludedStart, excludedEnd);
-          }
+      const anySlotIsExcluded = parsedScheduleResult.allTimeSlots.some(slot => {
+        const slotIsOnExcludedDay = slot.days.some(day => excludedDays.includes(day));
+        if (slotIsOnExcludedDay) {
+          return true;
         }
+
+        const slotOverlapsAnExcludedTimeRange = excludedTimeRanges.some(excludedRange => {
+          if (excludedRange.start && excludedRange.end && slot.startTime && slot.endTime) {
+            return checkTimeOverlap(slot.startTime, slot.endTime, excludedRange.start, excludedRange.end);
+          }
+          return false;
+        });
+
+        if (slotOverlapsAnExcludedTimeRange) {
+          return true;
+        }
+
         return false;
       });
-      if (overlapsWithAnyExcludedTime) return false;
+
+      if (anySlotIsExcluded) {
+        return false;
+      }
 
       return true;
     });
@@ -192,47 +245,47 @@ function App() {
 
 
   useEffect(() => {
-    console.log('Conflict checking triggered. All courses:', allCourses);
-
-    const lockedCourses = allCourses.filter(course => course.isLocked);
-    console.log('Locked courses for conflict check:', lockedCourses);
+    const currentLockedCourses = allCourses.filter(course => course.isLocked);
+    console.log(
+      '[useEffect/conflicts] Checking conflicts for lockedCourses (count:', currentLockedCourses.length, '). Courses:',
+      currentLockedCourses.map(c => ({ id: c.id, subject: c.subject, section: c.section, schedule: c.schedule, isLocked: c.isLocked }))
+    );
 
     const conflicts = new Set();
 
+    for (let i = 0; i < currentLockedCourses.length; i++) {
+      for (let j = i + 1; j < currentLockedCourses.length; j++) {
+        const course1 = currentLockedCourses[i];
+        const course2 = currentLockedCourses[j];
 
-    for (let i = 0; i < lockedCourses.length; i++) {
-      for (let j = i + 1; j < lockedCourses.length; j++) {
-        const course1 = lockedCourses[i];
-        const course2 = lockedCourses[j];
+        const schedule1Result = parseSchedule(course1.schedule);
+        const schedule2Result = parseSchedule(course2.schedule);
 
-        console.log(`Checking conflict between locked courses: ${course1.subject}-${course1.section} and ${course2.subject}-${course2.section}`);
-
-        const schedule1 = parseSchedule(course1.schedule);
-        const schedule2 = parseSchedule(course2.schedule);
-
-        if (!schedule1 || schedule1.isTBA || !schedule1.startTime || !schedule1.endTime ||
-          !schedule2 || schedule2.isTBA || !schedule2.startTime || !schedule2.endTime) {
-          console.log('Skipping conflict check - one or both schedules are TBA or invalid');
+        if (!schedule1Result || schedule1Result.isTBA || schedule1Result.allTimeSlots.length === 0 ||
+          !schedule2Result || schedule2Result.isTBA || schedule2Result.allTimeSlots.length === 0) {
           continue;
         }
 
-        const commonDays = schedule1.days.filter(day => schedule2.days.includes(day));
-        console.log('Common days:', commonDays);
+        for (const slot1 of schedule1Result.allTimeSlots) {
+          for (const slot2 of schedule2Result.allTimeSlots) {
+            const commonDays = slot1.days.filter(day => slot2.days.includes(day));
 
-        if (commonDays.length > 0) {
-          const hasTimeOverlap = checkTimeOverlap(schedule1.startTime, schedule1.endTime, schedule2.startTime, schedule2.endTime);
-          console.log(`Time overlap check: ${schedule1.startTime}-${schedule1.endTime} and ${schedule2.startTime}-${schedule2.endTime}: ${hasTimeOverlap}`);
-
-          if (hasTimeOverlap) {
-            console.log(`Conflict detected! Adding ${course1.id} and ${course2.id} to conflicts`);
-            conflicts.add(course1.id);
-            conflicts.add(course2.id);
+            if (commonDays.length > 0) {
+              if (slot1.startTime && slot1.endTime && slot2.startTime && slot2.endTime) {
+                const hasTimeOverlap = checkTimeOverlap(slot1.startTime, slot1.endTime, slot2.startTime, slot2.endTime);
+                if (hasTimeOverlap) {
+                  conflicts.add(course1.id);
+                  conflicts.add(course2.id);
+                  break;
+                }
+              }
+            }
           }
+          if (conflicts.has(course1.id) && conflicts.has(course2.id)) break;
         }
       }
     }
-
-    console.log('Final conflict set:', [...conflicts]);
+    console.log('[useEffect/conflicts] Detected conflict IDs:', Array.from(conflicts));
     setConflictingLockedCourseIds(conflicts);
 
   }, [allCourses]);
@@ -383,33 +436,36 @@ function App() {
     const unlockedCourses = allCourses.map(c => ({ ...c, isLocked: false }));
 
     const filteredCourses = unlockedCourses.filter(course => {
-      if (selectedStatusFilter === 'open') { if (course.isClosed === true) return false; }
-      else if (selectedStatusFilter === 'closed') { if (course.isClosed === false) return false; }
+      if (selectedStatusFilter === 'open' && course.isClosed === true) return false;
+      if (selectedStatusFilter === 'closed' && course.isClosed === false) return false;
 
       if (selectedSectionTypes.length > 0) {
         const courseSectionType = getSectionTypeSuffix(course.section);
         if (!courseSectionType || !selectedSectionTypes.includes(courseSectionType)) return false;
       }
 
-      const parsedSchedule = parseSchedule(course.schedule);
-      if (!parsedSchedule || parsedSchedule.isTBA) return true;
+      const parsedScheduleResult = parseSchedule(course.schedule);
+      if (!parsedScheduleResult || parsedScheduleResult.isTBA || !parsedScheduleResult.allTimeSlots || parsedScheduleResult.allTimeSlots.length === 0) {
+        return true;
+      }
 
-      const runsOnAnExcludedDay = parsedSchedule.days.some(day => excludedDays.includes(day));
-      if (runsOnAnExcludedDay) return false;
+      const anySlotIsExcluded = parsedScheduleResult.allTimeSlots.some(slot => {
+        const slotIsOnExcludedDay = slot.days.some(day => excludedDays.includes(day));
+        if (slotIsOnExcludedDay) return true;
 
-      const overlapsWithAnyExcludedTime = excludedTimeRanges.some(range => {
-        if (range.start && range.end) {
-          const excludedStart = range.start;
-          const excludedEnd = range.end;
-          const courseStart = parsedSchedule.startTime;
-          const courseEnd = parsedSchedule.endTime;
-          if (courseStart && courseEnd) {
-            return checkTimeOverlap(courseStart, courseEnd, excludedStart, excludedEnd);
+        const slotOverlapsAnExcludedTimeRange = excludedTimeRanges.some(excludedRange => {
+          if (excludedRange.start && excludedRange.end && slot.startTime && slot.endTime) {
+            return checkTimeOverlap(slot.startTime, slot.endTime, excludedRange.start, excludedRange.end);
           }
-        }
+          return false;
+        });
+        if (slotOverlapsAnExcludedTimeRange) return true;
         return false;
       });
-      if (overlapsWithAnyExcludedTime) return false;
+
+      if (anySlotIsExcluded) {
+        return false;
+      }
 
       return true;
     });
@@ -440,38 +496,46 @@ function App() {
         const shuffledCourses = [...subjectCourses].sort(() => Math.random() - 0.5);
 
         for (const course of shuffledCourses) {
-          const courseSchedule = parseSchedule(course.schedule);
-          if (!courseSchedule || courseSchedule.isTBA) {
+          const courseScheduleResult = parseSchedule(course.schedule);
+          if (!courseScheduleResult || courseScheduleResult.isTBA || !courseScheduleResult.allTimeSlots || courseScheduleResult.allTimeSlots.length === 0) {
             currentSchedule.push(course);
             break;
           }
 
-          let hasConflict = false;
+          let hasConflictWithCurrentSelection = false;
           for (const existingCourse of currentSchedule) {
-            const existingSchedule = parseSchedule(existingCourse.schedule);
-            if (!existingSchedule || existingSchedule.isTBA) continue;
-
-            const commonDays = courseSchedule.days.filter(day =>
-              existingSchedule.days.includes(day)
-            );
-
-            if (commonDays.length > 0) {
-              if (checkTimeOverlap(
-                courseSchedule.startTime, courseSchedule.endTime,
-                existingSchedule.startTime, existingSchedule.endTime
-              )) {
-                hasConflict = true;
-                break;
-              }
+            const existingScheduleResult = parseSchedule(existingCourse.schedule);
+            if (!existingScheduleResult || existingScheduleResult.isTBA || !existingScheduleResult.allTimeSlots || existingScheduleResult.allTimeSlots.length === 0) {
+              continue;
             }
+
+            for (const newSlot of courseScheduleResult.allTimeSlots) {
+              for (const existingSlot of existingScheduleResult.allTimeSlots) {
+                const commonDays = newSlot.days.filter(day => existingSlot.days.includes(day));
+                if (commonDays.length > 0) {
+                  if (newSlot.startTime && newSlot.endTime && existingSlot.startTime && existingSlot.endTime) {
+                    if (checkTimeOverlap(newSlot.startTime, newSlot.endTime, existingSlot.startTime, existingSlot.endTime)) {
+                      hasConflictWithCurrentSelection = true;
+                      break;
+                    }
+                  }
+                }
+              }
+              if (hasConflictWithCurrentSelection) break;
+            }
+            if (hasConflictWithCurrentSelection) break;
           }
 
-          if (!hasConflict) {
+          if (!hasConflictWithCurrentSelection) {
             currentSchedule.push(course);
             break;
           }
         }
       });
+
+      if (!isScheduleConflictFree(currentSchedule, parseSchedule, checkTimeOverlap)) {
+        continue;
+      }
 
       const scheduleKey = generateCombinationKey(currentSchedule);
 
@@ -500,11 +564,27 @@ function App() {
     }
 
     if (bestSchedule.length > 0) {
-      const bestScheduleIds = new Set(bestSchedule.map(course => course.id));
+      const isActuallyConflictFree = isScheduleConflictFree(bestSchedule, parseSchedule, checkTimeOverlap);
+      console.log(
+        '[generateBestSchedule] Final bestSchedule (length:', bestSchedule.length, ') before applying. Is conflict-free according to isScheduleConflictFree():', isActuallyConflictFree,
+        'Courses:', bestSchedule.map(c => ({ id: c.id, subject: c.subject, section: c.section, schedule: c.schedule }))
+      );
+
+      if (!isActuallyConflictFree) {
+        alert("The best schedule found still had conflicts. Please try again or adjust filters. No schedule applied.");
+        console.error(
+          "[generateBestSchedule] CRITICAL SAFEGUARD: Conflict found in final bestSchedule despite earlier checks. Aborting application.",
+          bestSchedule.map(c => ({ id: c.id, subject: c.subject, section: c.section, schedule: c.schedule }))
+        );
+        return;
+      }
+
+      const uniqueCourseKey = (course) => `${course.id}-${course.subject}-${course.section}`;
+      const bestScheduleKeys = new Set(bestSchedule.map(uniqueCourseKey));
 
       setAllCourses(prev => prev.map(course => ({
         ...course,
-        isLocked: bestScheduleIds.has(course.id)
+        isLocked: bestScheduleKeys.has(uniqueCourseKey(course))
       })));
 
       setGeneratedScheduleCount(prev => prev + 1);

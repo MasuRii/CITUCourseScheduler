@@ -47,44 +47,57 @@ function TimetableView({ lockedCourses }) {
     const coursesByTimeAndDay = {};
 
     lockedCourses.forEach(course => {
-        const schedule = parseSchedule(course.schedule);
-        if (!schedule || schedule.isTBA) return;
+        const scheduleResult = parseSchedule(course.schedule);
+        if (!scheduleResult || scheduleResult.isTBA || !scheduleResult.allTimeSlots || scheduleResult.allTimeSlots.length === 0) {
+            return;
+        }
 
-        const { days, startTime, endTime } = schedule;
-        if (!startTime || !endTime) return;
+        scheduleResult.allTimeSlots.forEach(slot => {
+            const { days, startTime, endTime } = slot;
+            if (!startTime || !endTime) return;
 
-        days.forEach(day => {
-            for (let i = 0; i < TIME_SLOTS.length; i++) {
-                const timeSlot = TIME_SLOTS[i];
+            days.forEach(day => {
+                for (let i = 0; i < TIME_SLOTS.length; i++) {
+                    const timeGridSlot = TIME_SLOTS[i];
 
-                if (timeSlot >= startTime && timeSlot < endTime) {
-                    if (!coursesByTimeAndDay[timeSlot]) {
-                        coursesByTimeAndDay[timeSlot] = {};
+                    if (timeGridSlot >= startTime && timeGridSlot < endTime) {
+                        if (!coursesByTimeAndDay[timeGridSlot]) {
+                            coursesByTimeAndDay[timeGridSlot] = {};
+                        }
+                        if (!coursesByTimeAndDay[timeGridSlot][day]) {
+                            coursesByTimeAndDay[timeGridSlot][day] = [];
+                        }
+
+                        const isStartOfCourseSlot = timeGridSlot === startTime;
+
+                        let courseAlreadyInCellForThisSlot = coursesByTimeAndDay[timeGridSlot][day].find(
+                            c => c.id === course.id && c.slotStartTime === startTime
+                        );
+
+                        if (!courseAlreadyInCellForThisSlot) {
+                            coursesByTimeAndDay[timeGridSlot][day].push({
+                                ...course,
+                                slotStartTime: startTime,
+                                slotEndTime: endTime,
+                                isStartOfCourseSlot: isStartOfCourseSlot,
+                            });
+                        }
                     }
-                    if (!coursesByTimeAndDay[timeSlot][day]) {
-                        coursesByTimeAndDay[timeSlot][day] = [];
-                    }
-
-                    const isStartOfCourse = timeSlot === startTime;
-                    coursesByTimeAndDay[timeSlot][day].push({
-                        ...course,
-                        isStartOfCourse
-                    });
                 }
-            }
+            });
         });
     });
 
-    const renderCourseCell = (courses) => {
-        if (!courses || courses.length === 0) return null;
+    const renderCourseCell = (coursesInGridCell) => {
+        if (!coursesInGridCell || coursesInGridCell.length === 0) return null;
 
-        const startCourses = courses.filter(c => c.isStartOfCourse);
+        const startCourses = coursesInGridCell.filter(c => c.isStartOfCourseSlot);
         if (startCourses.length === 0) {
             return <div className="timetable-course-continuation"></div>;
         }
 
         return startCourses.map((course, index) => (
-            <div key={`${course.id}-${index}`} className="timetable-course">
+            <div key={`${course.id}-${course.slotStartTime}-${index}`} className="timetable-course">
                 <div className="timetable-course-subject">{course.subject}</div>
                 <div className="timetable-course-section">{course.section}</div>
                 <div className="timetable-course-room">{course.room}</div>

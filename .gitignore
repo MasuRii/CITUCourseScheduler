@@ -398,3 +398,6 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+.cursor
+course-scheduler-web/sample-rawdata.txt
