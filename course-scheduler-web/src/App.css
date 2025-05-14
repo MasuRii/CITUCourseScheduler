@@ -356,6 +356,8 @@ button:focus-visible {
   font-size: var(--font-size-xs);
   transition: all 0.2s ease;
   padding: 0;
+  position: relative;
+  z-index: 2;
 }
 
 .remove-range-button:hover {
@@ -627,6 +629,11 @@ button:focus-visible {
   gap: var(--space-1);
   font-size: var(--font-size-sm);
   font-weight: 500;
+  flex-shrink: 0;
+}
+
+.time-input-label .react-datepicker-wrapper {
+  overflow: hidden;
 }
 
 .time-input {
@@ -639,6 +646,7 @@ button:focus-visible {
   background-color: var(--input-bg);
   transition: border-color 0.2s ease;
   width: 100px;
+  box-sizing: border-box;
 }
 
 .time-input:focus-visible {
@@ -1262,4 +1270,73 @@ input[type="time"]:focus-visible {
   background-color: var(--button-border);
   color: var(--text-muted-color);
   cursor: not-allowed;
+}
+
+.user-preferences-section {
+  margin-bottom: 0;
+}
+
+.preference-item {
+  margin-bottom: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.preference-item:last-child {
+  margin-bottom: 0;
+}
+
+.preference-input,
+.preference-select {
+  width: 100%;
+  max-width: 250px;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--input-border);
+  border-radius: 6px;
+  background-color: var(--input-bg);
+  color: var(--input-text);
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-sm);
+}
+
+.preference-input:focus-visible,
+.preference-select:focus-visible {
+  outline: var(--focus-outline-width) var(--focus-outline-style) var(--focus-outline-color);
+  outline-offset: var(--focus-outline-offset);
+  border-color: var(--link-color);
+}
+
+.preference-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+}
+
+.preference-checkbox-label input[type="checkbox"] {
+  margin: 0;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--header-bg);
+}
+
+.preference-checkbox-label input[type="checkbox"]:focus-visible {
+  outline: var(--focus-outline-width) var(--focus-outline-style) var(--focus-outline-color);
+  outline-offset: var(--focus-outline-offset);
+  border-radius: 2px;
+}
+
+.user-preferences-section .filter-label {
+  font-weight: var(--font-weight-bold);
+  color: var(--text-color);
+  margin-bottom: 0;
+}
+
+.user-preferences-section .input-description {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted-color);
+  margin-top: var(--space-1);
 }

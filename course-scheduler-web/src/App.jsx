@@ -20,11 +20,15 @@ const LOCAL_STORAGE_KEYS = {
   GROUPING: 'courseBuilder_groupingKey',
   SECTION_TYPES: 'courseBuilder_selectedSectionTypes',
   STATUS_FILTER: 'courseBuilder_selectedStatusFilter',
+  MAX_UNITS: 'courseBuilder_maxUnits',
+  MAX_CLASS_GAP_HOURS: 'courseBuilder_maxClassGapHours',
+  PREFERRED_TIME_OF_DAY: 'courseBuilder_preferredTimeOfDay',
 };
 
 const ALLOWED_GROUPING_KEYS = ['none', 'offeringDept', 'subject'];
 const SECTION_TYPE_SUFFIXES = ['AP3', 'AP4', 'AP5'];
 const ALLOWED_STATUS_FILTERS = ['all', 'open', 'closed'];
+const ALLOWED_PREFERRED_TIMES = ['any', 'morning', 'afternoon', 'evening'];
 
 const loadFromLocalStorage = (key, defaultValue) => {
   if (typeof window === 'undefined' || !window.localStorage) {
@@ -56,6 +60,15 @@ const loadFromLocalStorage = (key, defaultValue) => {
     if (key === LOCAL_STORAGE_KEYS.EXCLUDED_RANGES) {
       return Array.isArray(parsed) && parsed.every(item => typeof item === 'object' && item !== null && 'id' in item && 'start' in item && 'end' in item) ? parsed : defaultValue;
     }
+    if (key === LOCAL_STORAGE_KEYS.MAX_UNITS) {
+      return typeof parsed === 'string' ? parsed : defaultValue;
+    }
+    if (key === LOCAL_STORAGE_KEYS.MAX_CLASS_GAP_HOURS) {
+      return typeof parsed === 'string' ? parsed : defaultValue;
+    }
+    if (key === LOCAL_STORAGE_KEYS.PREFERRED_TIME_OF_DAY) {
+      return ALLOWED_PREFERRED_TIMES.includes(parsed) ? parsed : defaultValue;
+    }
 
     return parsed;
   } catch (e) {
@@ -67,6 +80,9 @@ const loadFromLocalStorage = (key, defaultValue) => {
     if (key === LOCAL_STORAGE_KEYS.COURSES) return [];
     if (key === LOCAL_STORAGE_KEYS.EXCLUDED_DAYS) return [];
     if (key === LOCAL_STORAGE_KEYS.EXCLUDED_RANGES) return [{ id: Date.now(), start: '', end: '' }];
+    if (key === LOCAL_STORAGE_KEYS.MAX_UNITS) return '';
+    if (key === LOCAL_STORAGE_KEYS.MAX_CLASS_GAP_HOURS) return '';
+    if (key === LOCAL_STORAGE_KEYS.PREFERRED_TIME_OF_DAY) return 'any';
     return defaultValue;
   }
 };
@@ -156,6 +172,9 @@ function App() {
   const [selectedStatusFilter, setSelectedStatusFilter] = useState(() =>
     loadFromLocalStorage(LOCAL_STORAGE_KEYS.STATUS_FILTER, 'open')
   );
+  const [maxUnits, setMaxUnits] = useState(() => loadFromLocalStorage(LOCAL_STORAGE_KEYS.MAX_UNITS, ''));
+  const [maxClassGapHours, setMaxClassGapHours] = useState(() => loadFromLocalStorage(LOCAL_STORAGE_KEYS.MAX_CLASS_GAP_HOURS, ''));
+  const [preferredTimeOfDay, setPreferredTimeOfDay] = useState(() => loadFromLocalStorage(LOCAL_STORAGE_KEYS.PREFERRED_TIME_OF_DAY, 'any'));
   const [processedCourses, setProcessedCourses] = useState([]);
   const [conflictingLockedCourseIds, setConflictingLockedCourseIds] = useState(new Set());
   const [showTimetable, setShowTimetable] = useState(false);
@@ -169,6 +188,9 @@ function App() {
   useEffect(() => { localStorage.setItem(LOCAL_STORAGE_KEYS.GROUPING, JSON.stringify(groupingKey)); }, [groupingKey]);
   useEffect(() => { localStorage.setItem(LOCAL_STORAGE_KEYS.SECTION_TYPES, JSON.stringify(selectedSectionTypes)); }, [selectedSectionTypes]);
   useEffect(() => { localStorage.setItem(LOCAL_STORAGE_KEYS.STATUS_FILTER, JSON.stringify(selectedStatusFilter)); }, [selectedStatusFilter]);
+  useEffect(() => { localStorage.setItem(LOCAL_STORAGE_KEYS.MAX_UNITS, JSON.stringify(maxUnits)); }, [maxUnits]);
+  useEffect(() => { localStorage.setItem(LOCAL_STORAGE_KEYS.MAX_CLASS_GAP_HOURS, JSON.stringify(maxClassGapHours)); }, [maxClassGapHours]);
+  useEffect(() => { localStorage.setItem(LOCAL_STORAGE_KEYS.PREFERRED_TIME_OF_DAY, JSON.stringify(preferredTimeOfDay)); }, [preferredTimeOfDay]);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', 'dark');
@@ -391,6 +413,26 @@ function App() {
   const handleSectionTypeChange = (typeId, isSelected) => { setSelectedSectionTypes(prev => isSelected ? [...new Set([...prev, typeId])] : prev.filter(id => id !== typeId)); };
   const handleStatusFilterChange = (statusValue) => { setSelectedStatusFilter(statusValue); };
 
+  const handleMaxUnitsChange = (e) => {
+    const value = e.target.value;
+    if (value === '' || (/^[0-9]*$/.test(value) && parseInt(value, 10) >= 0)) {
+      setMaxUnits(value);
+    }
+  };
+  const handleMaxClassGapHoursChange = (e) => {
+    let value = e.target.value;
+    if (value === '') {
+      setMaxClassGapHours('');
+      return;
+    }
+    const numValue = parseFloat(value);
+    if (!isNaN(numValue) && numValue >= 0 && numValue <= 3) {
+      setMaxClassGapHours(value);
+    } else if (value.endsWith('.') && parseFloat(value.slice(0, -1)) >= 0 && parseFloat(value.slice(0, -1)) <= 3) {
+      setMaxClassGapHours(value);
+    }
+  };
+  const handlePreferredTimeOfDayChange = (e) => setPreferredTimeOfDay(e.target.value);
 
   const displayedCount = useMemo(() => {
     if (!Array.isArray(processedCourses)) return 0;
@@ -684,6 +726,51 @@ function App() {
             </div>
           </div>
         )}
+
+        <div className="section-container user-preferences-section">
+          <h2>User Preferences</h2>
+          <div className="preference-item">
+            <label htmlFor="maxUnitsInput" className="filter-label">Maximum Units:</label>
+            <input
+              type="number"
+              id="maxUnitsInput"
+              value={maxUnits}
+              onChange={handleMaxUnitsChange}
+              placeholder="e.g., 18"
+              min="0"
+              className="preference-input"
+            />
+          </div>
+          <div className="preference-item">
+            <label htmlFor="maxGapInput" className="filter-label">Max Gap Between Classes (hours):</label>
+            <input
+              type="number"
+              id="maxGapInput"
+              value={maxClassGapHours}
+              onChange={handleMaxClassGapHoursChange}
+              placeholder="e.g., 1 (0 to 3)"
+              min="0"
+              max="3"
+              step="0.5"
+              className="preference-input"
+            />
+            <small className="input-description">Enter desired max hours (0-3). 0 means back-to-back. Leave blank for no preference.</small>
+          </div>
+          <div className="preference-item">
+            <label htmlFor="preferredTimeSelect" className="filter-label">Preferred Time of Day:</label>
+            <select
+              id="preferredTimeSelect"
+              value={preferredTimeOfDay}
+              onChange={handlePreferredTimeOfDayChange}
+              className="preference-select"
+            >
+              <option value="any">Any</option>
+              <option value="morning">Morning (before 12 PM)</option>
+              <option value="afternoon">Afternoon (12 PM - 5 PM)</option>
+              <option value="evening">Evening (after 5 PM)</option>
+            </select>
+          </div>
+        </div>
 
         <div className="section-container">
           <h2>Course Filters</h2>
