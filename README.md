@@ -1,4 +1,4 @@
-# CITU Course Scheduler
+# CITU Course Builder
 
 A modern web application to help CIT-U students (and others) plan, filter, and optimize their class schedules.
 
