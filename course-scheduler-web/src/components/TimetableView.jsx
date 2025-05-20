@@ -53,7 +53,7 @@ function TimetableView({ lockedCourses }) {
         }
 
         scheduleResult.allTimeSlots.forEach(slot => {
-            const { days, startTime, endTime } = slot;
+            const { days, startTime, endTime, room } = slot;
             if (!startTime || !endTime) return;
 
             days.forEach(day => {
@@ -80,6 +80,7 @@ function TimetableView({ lockedCourses }) {
                                 slotStartTime: startTime,
                                 slotEndTime: endTime,
                                 isStartOfCourseSlot: isStartOfCourseSlot,
+                                slotRoom: room || course.room
                             });
                         }
                     }
@@ -100,7 +101,7 @@ function TimetableView({ lockedCourses }) {
             <div key={`${course.id}-${course.slotStartTime}-${index}`} className="timetable-course">
                 <div className="timetable-course-subject">{course.subject}</div>
                 <div className="timetable-course-section">{course.section}</div>
-                <div className="timetable-course-room">{course.room}</div>
+                <div className="timetable-course-room">{course.slotRoom}</div>
             </div>
         ));
     };

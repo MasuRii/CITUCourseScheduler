@@ -121,6 +121,7 @@ function parseDaySegment(daySegmentStr) {
  * - "M/T/W/TH/F | 12:00PM-1:00PM/12:00PM-2:00PM | ROOM" (Days apply to first time, subsequent times might be for the last day or unassigned)
  * - "F/SAT | 10:30AM-11:30AM/7:00PM-9:00PM | ROOM" (F -> 10:30-11:30, SAT -> 7:00-9:00)
  * - "TTH | 9:00AM-10:30AM | ROOM | LEC + M/W/F | 9:00AM-12:00PM | ROOM | LAB"
+ * - "W/SAT | 9:00AM-10:30AM | Room#online/ACAD309 | LEC" (W -> online, SAT -> ACAD309)
  *
  * @param {string} scheduleString - The raw schedule string.
  * @returns {object|null} An object with { days: string[], startTime: string, endTime: string, isTBA: boolean } or null if parsing fails.
@@ -187,6 +188,18 @@ function parseSchedulePart(schedulePartStr) {
 
   const daysComponent = rawParts[0]; // e.g., "F/SAT" or "MWF"
   const timesComponent = rawParts[1]; // e.g., "10:30AM-11:30AM/7:00PM-9:00PM" or "9:00AM-10:00AM"
+  
+  // Get room component if available (could be "Room#FIELD" or "Room#online/ACAD309")
+  const roomComponent = rawParts.length >= 3 ? rawParts[2] : "";
+  
+  // Parse room information - extract rooms for each day if multiple are provided
+  let roomsArray = [];
+  if (roomComponent && roomComponent.toLowerCase().startsWith('room#')) {
+    const roomsSection = roomComponent.substring(5); // Remove "Room#" prefix
+    roomsArray = roomsSection.split('/').map(room => room.trim());
+  } else if (roomComponent) {
+    roomsArray = [roomComponent.trim()];
+  }
 
   const daySegmentsStrs = daysComponent.split('/').map(s => s.trim()); // ["F", "SAT"]
   const timeSegmentsStrs = timesComponent.split('/').map(s => s.trim()); // ["10:30AM-11:30AM", "7:00PM-9:00PM"]
@@ -205,15 +218,20 @@ function parseSchedulePart(schedulePartStr) {
 
   const nDaySegments = parsedDaySegments.length;
   const nTimeSegments = parsedTimeSegments.length;
+  const nRooms = roomsArray.length;
 
   if (nDaySegments === nTimeSegments) {
     // One-to-one mapping: F -> Time1, SAT -> Time2
     for (let i = 0; i < nDaySegments; i++) {
       if (parsedDaySegments[i].length > 0 && parsedTimeSegments[i]) {
+        // Use corresponding room if available, otherwise use the first room or empty string
+        const roomForDaySegment = i < nRooms ? roomsArray[i] : (nRooms > 0 ? roomsArray[0] : "");
+        
         resultingTimeSlots.push({
           days: parsedDaySegments[i],
           startTime: parsedTimeSegments[i].startTime,
           endTime: parsedTimeSegments[i].endTime,
+          room: roomForDaySegment
         });
       }
     }
@@ -221,12 +239,15 @@ function parseSchedulePart(schedulePartStr) {
     // Single day group applies to all time slots: F | Time1/Time2  => F Time1, F Time2
     const days = parsedDaySegments[0];
     if (days.length > 0) {
-      parsedTimeSegments.forEach(timeSlot => {
+      parsedTimeSegments.forEach((timeSlot, index) => {
         if (timeSlot) {
+          const roomForTimeSlot = index < nRooms ? roomsArray[index] : (nRooms > 0 ? roomsArray[0] : "");
+          
           resultingTimeSlots.push({
             days: days,
             startTime: timeSlot.startTime,
             endTime: timeSlot.endTime,
+            room: roomForTimeSlot
           });
         }
       });
@@ -235,12 +256,15 @@ function parseSchedulePart(schedulePartStr) {
     // Multiple day groups apply to a single time slot: F/SAT | Time1 => F Time1, SAT Time1
     const timeSlot = parsedTimeSegments[0];
     if (timeSlot) {
-      parsedDaySegments.forEach(daysArray => {
+      parsedDaySegments.forEach((daysArray, index) => {
         if (daysArray.length > 0) {
+          const roomForDayGroup = index < nRooms ? roomsArray[index] : (nRooms > 0 ? roomsArray[0] : "");
+          
           resultingTimeSlots.push({
             days: daysArray,
             startTime: timeSlot.startTime,
             endTime: timeSlot.endTime,
+            room: roomForDayGroup
           });
         }
       });
@@ -252,10 +276,13 @@ function parseSchedulePart(schedulePartStr) {
     const minLen = Math.min(nDaySegments, nTimeSegments);
     for (let i = 0; i < minLen; i++) {
       if (parsedDaySegments[i].length > 0 && parsedTimeSegments[i]) {
+        const roomForSegment = i < nRooms ? roomsArray[i] : (nRooms > 0 ? roomsArray[0] : "");
+        
         resultingTimeSlots.push({
           days: parsedDaySegments[i],
           startTime: parsedTimeSegments[i].startTime,
           endTime: parsedTimeSegments[i].endTime,
+          room: roomForSegment
         });
       }
     }
