@@ -73,7 +73,7 @@ const loadFromLocalStorage = (key, defaultValue) => {
       return ALLOWED_PREFERRED_TIMES.includes(parsed) ? parsed : defaultValue;
     }
     if (key === LOCAL_STORAGE_KEYS.SCHEDULE_SEARCH_MODE) {
-      return ALLOWED_SEARCH_MODES.includes(parsed) ? parsed : 'fast';
+      return ALLOWED_SEARCH_MODES.includes(parsed) ? parsed : 'exhaustive';
     }
 
     return parsed;
@@ -89,7 +89,7 @@ const loadFromLocalStorage = (key, defaultValue) => {
     if (key === LOCAL_STORAGE_KEYS.MAX_UNITS) return '';
     if (key === LOCAL_STORAGE_KEYS.MAX_CLASS_GAP_HOURS) return '';
     if (key === LOCAL_STORAGE_KEYS.PREFERRED_TIME_OF_DAY) return 'any';
-    if (key === LOCAL_STORAGE_KEYS.SCHEDULE_SEARCH_MODE) return 'fast';
+    if (key === LOCAL_STORAGE_KEYS.SCHEDULE_SEARCH_MODE) return 'exhaustive';
     return defaultValue;
   }
 };
@@ -280,8 +280,8 @@ function App() {
   const [generatedScheduleCount, setGeneratedScheduleCount] = useState(0);
   const triedScheduleCombinations = useRef(new Set()).current;
   const [scheduleSearchMode, setScheduleSearchMode] = useState(() => {
-    const saved = loadFromLocalStorage(LOCAL_STORAGE_KEYS.SCHEDULE_SEARCH_MODE, 'fast');
-    return ALLOWED_SEARCH_MODES.includes(saved) ? saved : 'fast';
+    const saved = loadFromLocalStorage(LOCAL_STORAGE_KEYS.SCHEDULE_SEARCH_MODE, 'exhaustive');
+    return ALLOWED_SEARCH_MODES.includes(saved) ? saved : 'exhaustive';
   });
 
   useEffect(() => { localStorage.setItem(LOCAL_STORAGE_KEYS.COURSES, JSON.stringify(allCourses)); }, [allCourses]);
@@ -536,15 +536,6 @@ function App() {
       setMaxClassGapHours(value);
     }
   };
-  const handleMoveTimePref = (index, direction) => {
-    setPreferredTimeOfDayOrder(prev => {
-      const newOrder = [...prev];
-      const targetIndex = direction === 'up' ? index - 1 : index + 1;
-      if (targetIndex < 0 || targetIndex >= newOrder.length) return newOrder;
-      [newOrder[index], newOrder[targetIndex]] = [newOrder[targetIndex], newOrder[index]];
-      return newOrder;
-    });
-  };
   const handleRemoveTimePref = (index) => {
     setPreferredTimeOfDayOrder(prev => prev.filter((_, i) => i !== index));
   };
@@ -713,6 +704,7 @@ function App() {
               }
               if (hasConflictWithCurrentSelection) break;
             }
+
             if (hasConflictWithCurrentSelection) break;
           }
 
@@ -911,30 +903,49 @@ function App() {
           </div>
           <div className="preference-item">
             <label className="filter-label">Preferred Time of Day (Order):</label>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxWidth: 300 }}>
-              {preferredTimeOfDayOrder.length === 0 && (
-                <div style={{ color: '#888', fontStyle: 'italic' }}>No preference set (all times treated equally)</div>
-              )}
-              {preferredTimeOfDayOrder.map((time, idx) => (
-                <div key={time} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ minWidth: 90, textTransform: 'capitalize' }}>{
-                    time === 'morning' ? 'Morning (before 12 PM)' :
-                      time === 'afternoon' ? 'Afternoon (12 PM - 5 PM)' :
-                        time === 'evening' ? 'Evening (after 5 PM)' :
-                          'Any'
-                  }</span>
-                  <button type="button" onClick={() => handleMoveTimePref(idx, 'up')} disabled={idx === 0} style={{ padding: '2px 6px' }}>↑</button>
-                  <button type="button" onClick={() => handleMoveTimePref(idx, 'down')} disabled={idx === preferredTimeOfDayOrder.length - 1} style={{ padding: '2px 6px' }}>↓</button>
-                  <button type="button" onClick={() => handleRemoveTimePref(idx)} style={{ padding: '2px 6px', color: 'red' }}>✕</button>
-                </div>
-              ))}
-              <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+            <div className="preferred-time-order-container">
+              <div className="preferred-time-order-note">Drag to reorder your preferred times of day.</div>
+              <ul className="preferred-time-order-list">
+                {preferredTimeOfDayOrder.length === 0 && (
+                  <li className="preferred-time-order-empty">No preference set (all times treated equally)</li>
+                )}
+                {preferredTimeOfDayOrder.map((time, idx) => (
+                  <li
+                    key={time}
+                    className="preferred-time-order-item"
+                    draggable
+                    onDragStart={e => {
+                      e.dataTransfer.setData('text/plain', idx);
+                    }}
+                    onDragOver={e => e.preventDefault()}
+                    onDrop={e => {
+                      const fromIdx = Number(e.dataTransfer.getData('text/plain'));
+                      if (fromIdx === idx) return;
+                      setPreferredTimeOfDayOrder(prev => {
+                        const newOrder = [...prev];
+                        const [moved] = newOrder.splice(fromIdx, 1);
+                        newOrder.splice(idx, 0, moved);
+                        return newOrder;
+                      });
+                    }}
+                  >
+                    <span className="preferred-time-label">{
+                      time === 'morning' ? 'Morning (before 12 PM)' :
+                        time === 'afternoon' ? 'Afternoon (12 PM - 5 PM)' :
+                          time === 'evening' ? 'Evening (after 5 PM)' :
+                            'Any'
+                    }</span>
+                    <button type="button" className="preferred-time-remove" onClick={() => handleRemoveTimePref(idx)}>✕</button>
+                  </li>
+                ))}
+              </ul>
+              <div className="preferred-time-order-actions">
                 {[...DEFAULT_PREFERRED_TIMES_ORDER].filter(t => !preferredTimeOfDayOrder.includes(t)).map(time => (
-                  <button key={time} type="button" onClick={() => handleAddTimePref(time)} style={{ padding: '2px 8px', fontSize: '0.95em' }}>
+                  <button key={time} type="button" className="preferred-time-add" onClick={() => handleAddTimePref(time)}>
                     Add {time.charAt(0).toUpperCase() + time.slice(1)}
                   </button>
                 ))}
-                <button type="button" onClick={handleResetTimePrefs} style={{ marginLeft: 'auto', fontSize: '0.95em' }}>Reset</button>
+                <button type="button" className="preferred-time-reset" onClick={handleResetTimePrefs}>Reset</button>
               </div>
             </div>
           </div>
