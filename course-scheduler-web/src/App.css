@@ -1465,3 +1465,26 @@ input[type="time"]:focus-visible {
 .preferred-time-reset:hover {
   background: var(--button-hover-bg);
 }
+
+a {
+  color: var(--link-color);
+  text-decoration: underline;
+  transition: color 0.2s;
+}
+
+a:hover,
+a:focus {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+[data-theme="dark"] a {
+  color: #9d6ae2;
+  text-decoration: underline;
+}
+
+[data-theme="dark"] a:hover,
+[data-theme="dark"] a:focus {
+  color: #d1b3ff;
+  text-decoration: underline;
+}
