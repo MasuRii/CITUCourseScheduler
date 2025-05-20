@@ -76,14 +76,14 @@ function CourseTable({ courses, groupingKey, onDeleteCourse, onToggleLockCourse,
                   </td>
                   <td className="data-cell actions-cell">
                     <button
-                      onClick={() => onToggleLockCourse(course.id)}
+                      onClick={() => onToggleLockCourse({ id: course.id, subject: course.subject, section: course.section })}
                       className={`lock-button ${course.isLocked ? 'locked' : 'unlocked'}`}
                       title={course.isLocked ? 'Unlock Course' : 'Lock Course'}
                     >
                       {course.isLocked ? 'Unlock' : 'Lock'}
                     </button>
                     <button
-                      onClick={() => onDeleteCourse(course.id)}
+                      onClick={() => onDeleteCourse({ id: course.id, subject: course.subject, section: course.section })}
                       className="delete-button"
                       title="Delete Course"
                     >
@@ -110,14 +110,14 @@ function CourseTable({ courses, groupingKey, onDeleteCourse, onToggleLockCourse,
               </td>
               <td className="data-cell actions-cell">
                 <button
-                  onClick={() => onToggleLockCourse(course.id)}
+                  onClick={() => onToggleLockCourse({ id: course.id, subject: course.subject, section: course.section })}
                   className={`lock-button ${course.isLocked ? 'locked' : 'unlocked'}`}
                   title={course.isLocked ? 'Unlock Course' : 'Lock Course'}
                 >
                   {course.isLocked ? 'Unlock' : 'Lock'}
                 </button>
                 <button
-                  onClick={() => onDeleteCourse(course.id)}
+                  onClick={() => onDeleteCourse({ id: course.id, subject: course.subject, section: course.section })}
                   className="delete-button"
                   title="Delete Course"
                 >

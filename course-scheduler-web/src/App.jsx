@@ -439,17 +439,27 @@ function App() {
       alert(`Error loading data: ${error.message}`);
     }
   };
-  const handleDeleteCourse = (id) => { setAllCourses(prev => prev.filter(c => c.id !== id)); };
+  const handleDeleteCourse = (courseIdentity) => {
+    const { id, subject, section } = courseIdentity;
+    setAllCourses(prev => prev.filter(c => !(c.id === id && c.subject === subject && c.section === section)));
+  };
   const handleDeleteAllCourses = () => { if (!window.confirm("Delete ALL courses? This cannot be undone.")) return; setAllCourses([]); setRawData(''); };
   const handleClearAllLocks = () => { if (!window.confirm("Clear ALL locks? This will unlock all courses.")) return; setAllCourses(prev => prev.map(c => ({ ...c, isLocked: false }))); };
-  const handleToggleLockCourse = (id) => {
-    console.log('Toggling lock for course ID:', id);
-    const courseBeforeToggle = allCourses.find(c => c.id === id);
+  const handleToggleLockCourse = (courseIdentity) => {
+    const { id, subject, section } = courseIdentity;
+    console.log('Toggling lock for course:', courseIdentity);
+    const courseBeforeToggle = allCourses.find(c => c.id === id && c.subject === subject && c.section === section);
     console.log('Course before toggle:', courseBeforeToggle);
+
+    if (!courseBeforeToggle) return;
 
     if (courseBeforeToggle.isLocked) {
       console.log('Unlocking already locked course');
-      setAllCourses(prev => prev.map(c => c.id === id ? { ...c, isLocked: false } : c));
+      setAllCourses(prev => prev.map(c =>
+        c.id === id && c.subject === subject && c.section === section
+          ? { ...c, isLocked: false }
+          : c
+      ));
       return;
     }
 
@@ -462,7 +472,11 @@ function App() {
 
     if (!scheduleToLock || scheduleToLock.isTBA || !scheduleToLock.startTime || !scheduleToLock.endTime) {
       console.log('Course has TBA or invalid schedule, skipping conflict check');
-      setAllCourses(prev => prev.map(c => c.id === id ? { ...c, isLocked: true } : c));
+      setAllCourses(prev => prev.map(c =>
+        c.id === id && c.subject === subject && c.section === section
+          ? { ...c, isLocked: true }
+          : c
+      ));
       return;
     }
 
@@ -507,7 +521,11 @@ function App() {
 
     console.log('Locking the course');
     setAllCourses(prev => {
-      const updatedCourses = prev.map(c => c.id === id ? { ...c, isLocked: true } : c);
+      const updatedCourses = prev.map(c =>
+        c.id === id && c.subject === subject && c.section === section
+          ? { ...c, isLocked: true }
+          : c
+      );
       console.log('All courses after locking:', updatedCourses);
       return updatedCourses;
     });
