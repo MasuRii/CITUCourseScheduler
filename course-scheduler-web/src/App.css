@@ -200,6 +200,14 @@ hr {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
+.section-container+.section-container {
+  margin-top: var(--space-5);
+}
+
+.user-preferences-section {
+  margin-bottom: var(--space-5);
+}
+
 .section-container:hover {
   box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
   transform: translateY(-2px);
@@ -861,6 +869,15 @@ input[type="time"]:focus-visible {
 
   .section-container {
     padding: var(--space-3);
+    margin-bottom: var(--space-4);
+  }
+
+  .section-container+.section-container {
+    margin-top: var(--space-4);
+  }
+
+  .user-preferences-section {
+    margin-bottom: var(--space-4);
   }
 
   .header-controls {
