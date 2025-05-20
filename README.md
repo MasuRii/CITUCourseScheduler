@@ -93,12 +93,6 @@ The app will be available at [http://localhost:3000](http://localhost:3000).
 
 ---
 
-## License
-
-MIT
-
----
-
 ## Acknowledgments
 
 - Built as a student project for CIT-U.
