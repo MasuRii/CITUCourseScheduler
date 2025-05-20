@@ -23,12 +23,15 @@ const LOCAL_STORAGE_KEYS = {
   MAX_UNITS: 'courseBuilder_maxUnits',
   MAX_CLASS_GAP_HOURS: 'courseBuilder_maxClassGapHours',
   PREFERRED_TIME_OF_DAY: 'courseBuilder_preferredTimeOfDay',
+  SCHEDULE_SEARCH_MODE: 'courseBuilder_scheduleSearchMode',
 };
 
 const ALLOWED_GROUPING_KEYS = ['none', 'offeringDept', 'subject'];
 const SECTION_TYPE_SUFFIXES = ['AP3', 'AP4', 'AP5'];
 const ALLOWED_STATUS_FILTERS = ['all', 'open', 'closed'];
 const ALLOWED_PREFERRED_TIMES = ['any', 'morning', 'afternoon', 'evening'];
+const DEFAULT_PREFERRED_TIMES_ORDER = ['morning', 'afternoon', 'evening', 'any'];
+const ALLOWED_SEARCH_MODES = ['fast', 'exhaustive'];
 
 const loadFromLocalStorage = (key, defaultValue) => {
   if (typeof window === 'undefined' || !window.localStorage) {
@@ -69,6 +72,9 @@ const loadFromLocalStorage = (key, defaultValue) => {
     if (key === LOCAL_STORAGE_KEYS.PREFERRED_TIME_OF_DAY) {
       return ALLOWED_PREFERRED_TIMES.includes(parsed) ? parsed : defaultValue;
     }
+    if (key === LOCAL_STORAGE_KEYS.SCHEDULE_SEARCH_MODE) {
+      return ALLOWED_SEARCH_MODES.includes(parsed) ? parsed : 'fast';
+    }
 
     return parsed;
   } catch (e) {
@@ -83,6 +89,7 @@ const loadFromLocalStorage = (key, defaultValue) => {
     if (key === LOCAL_STORAGE_KEYS.MAX_UNITS) return '';
     if (key === LOCAL_STORAGE_KEYS.MAX_CLASS_GAP_HOURS) return '';
     if (key === LOCAL_STORAGE_KEYS.PREFERRED_TIME_OF_DAY) return 'any';
+    if (key === LOCAL_STORAGE_KEYS.SCHEDULE_SEARCH_MODE) return 'fast';
     return defaultValue;
   }
 };
@@ -154,6 +161,94 @@ function isScheduleConflictFree(scheduleToTest, parseFn, overlapFn) {
   return true;
 }
 
+function getTimeOfDayBucket(time) {
+  if (!time) return 'any';
+  const [h] = time.split(':').map(Number);
+  if (h < 12) return 'morning';
+  if (h < 17) return 'afternoon';
+  if (h >= 17) return 'evening';
+  return 'any';
+}
+
+function scoreScheduleByTimePreference(schedule, prefOrder) {
+  if (!Array.isArray(prefOrder) || prefOrder.length === 0) return 0;
+  let score = 0;
+  for (const course of schedule) {
+    const parsed = parseSchedule(course.schedule);
+    if (!parsed || parsed.isTBA || !parsed.allTimeSlots || parsed.allTimeSlots.length === 0) continue;
+    let bestIdx = prefOrder.length;
+    for (const slot of parsed.allTimeSlots) {
+      const bucket = getTimeOfDayBucket(slot.startTime);
+      const idx = prefOrder.indexOf(bucket);
+      if (idx !== -1 && idx < bestIdx) bestIdx = idx;
+    }
+    score += bestIdx;
+  }
+  return score;
+}
+
+function generateExhaustiveBestSchedule(coursesBySubject, preferredTimeOfDayOrder) {
+  const subjects = Object.keys(coursesBySubject);
+  let bestSchedule = [];
+  let bestScore = -1;
+  let bestTimePrefScore = Infinity;
+
+  function backtrack(idx, currentSchedule) {
+    if (idx === subjects.length) {
+      if (!isScheduleConflictFree(currentSchedule, parseSchedule, checkTimeOverlap)) return;
+      const totalCourses = currentSchedule.length;
+      const totalUnits = currentSchedule.reduce((sum, course) => {
+        const units = parseFloat(course.creditedUnits || course.units);
+        return isNaN(units) ? sum : sum + units;
+      }, 0);
+      const score = totalCourses * 100 + totalUnits;
+      const timePrefScore = scoreScheduleByTimePreference(currentSchedule, preferredTimeOfDayOrder);
+      if (
+        score > bestScore ||
+        (score === bestScore && timePrefScore < bestTimePrefScore)
+      ) {
+        bestScore = score;
+        bestTimePrefScore = timePrefScore;
+        bestSchedule = [...currentSchedule];
+      }
+      return;
+    }
+    const subject = subjects[idx];
+    for (const course of coursesBySubject[subject]) {
+      let hasConflict = false;
+      const courseScheduleResult = parseSchedule(course.schedule);
+      if (courseScheduleResult && !courseScheduleResult.isTBA && courseScheduleResult.allTimeSlots && courseScheduleResult.allTimeSlots.length > 0) {
+        for (const existingCourse of currentSchedule) {
+          const existingScheduleResult = parseSchedule(existingCourse.schedule);
+          if (!existingScheduleResult || existingScheduleResult.isTBA || !existingScheduleResult.allTimeSlots || existingScheduleResult.allTimeSlots.length === 0) continue;
+          for (const newSlot of courseScheduleResult.allTimeSlots) {
+            for (const existingSlot of existingScheduleResult.allTimeSlots) {
+              const commonDays = newSlot.days.filter(day => existingSlot.days.includes(day));
+              if (commonDays.length > 0) {
+                if (newSlot.startTime && newSlot.endTime && existingSlot.startTime && existingSlot.endTime) {
+                  if (checkTimeOverlap(newSlot.startTime, newSlot.endTime, existingSlot.startTime, existingSlot.endTime)) {
+                    hasConflict = true;
+                    break;
+                  }
+                }
+              }
+            }
+            if (hasConflict) break;
+          }
+          if (hasConflict) break;
+        }
+      }
+      if (!hasConflict) {
+        currentSchedule.push(course);
+        backtrack(idx + 1, currentSchedule);
+        currentSchedule.pop();
+      }
+    }
+  }
+  backtrack(0, []);
+  return { bestSchedule, bestScore, bestTimePrefScore };
+}
+
 function App() {
   const [allCourses, setAllCourses] = useState(() => loadFromLocalStorage(LOCAL_STORAGE_KEYS.COURSES, []));
   const [excludedDays, setExcludedDays] = useState(() => loadFromLocalStorage(LOCAL_STORAGE_KEYS.EXCLUDED_DAYS, []));
@@ -174,12 +269,20 @@ function App() {
   );
   const [maxUnits, setMaxUnits] = useState(() => loadFromLocalStorage(LOCAL_STORAGE_KEYS.MAX_UNITS, ''));
   const [maxClassGapHours, setMaxClassGapHours] = useState(() => loadFromLocalStorage(LOCAL_STORAGE_KEYS.MAX_CLASS_GAP_HOURS, ''));
-  const [preferredTimeOfDay, setPreferredTimeOfDay] = useState(() => loadFromLocalStorage(LOCAL_STORAGE_KEYS.PREFERRED_TIME_OF_DAY, 'any'));
+  const [preferredTimeOfDayOrder, setPreferredTimeOfDayOrder] = useState(() => {
+    const saved = loadFromLocalStorage(LOCAL_STORAGE_KEYS.PREFERRED_TIME_OF_DAY, null);
+    if (Array.isArray(saved) && saved.length > 0) return saved;
+    return [...DEFAULT_PREFERRED_TIMES_ORDER];
+  });
   const [processedCourses, setProcessedCourses] = useState([]);
   const [conflictingLockedCourseIds, setConflictingLockedCourseIds] = useState(new Set());
   const [showTimetable, setShowTimetable] = useState(false);
   const [generatedScheduleCount, setGeneratedScheduleCount] = useState(0);
   const triedScheduleCombinations = useRef(new Set()).current;
+  const [scheduleSearchMode, setScheduleSearchMode] = useState(() => {
+    const saved = loadFromLocalStorage(LOCAL_STORAGE_KEYS.SCHEDULE_SEARCH_MODE, 'fast');
+    return ALLOWED_SEARCH_MODES.includes(saved) ? saved : 'fast';
+  });
 
   useEffect(() => { localStorage.setItem(LOCAL_STORAGE_KEYS.COURSES, JSON.stringify(allCourses)); }, [allCourses]);
   useEffect(() => { localStorage.setItem(LOCAL_STORAGE_KEYS.EXCLUDED_DAYS, JSON.stringify(excludedDays)); }, [excludedDays]);
@@ -190,7 +293,8 @@ function App() {
   useEffect(() => { localStorage.setItem(LOCAL_STORAGE_KEYS.STATUS_FILTER, JSON.stringify(selectedStatusFilter)); }, [selectedStatusFilter]);
   useEffect(() => { localStorage.setItem(LOCAL_STORAGE_KEYS.MAX_UNITS, JSON.stringify(maxUnits)); }, [maxUnits]);
   useEffect(() => { localStorage.setItem(LOCAL_STORAGE_KEYS.MAX_CLASS_GAP_HOURS, JSON.stringify(maxClassGapHours)); }, [maxClassGapHours]);
-  useEffect(() => { localStorage.setItem(LOCAL_STORAGE_KEYS.PREFERRED_TIME_OF_DAY, JSON.stringify(preferredTimeOfDay)); }, [preferredTimeOfDay]);
+  useEffect(() => { localStorage.setItem(LOCAL_STORAGE_KEYS.PREFERRED_TIME_OF_DAY, JSON.stringify(preferredTimeOfDayOrder)); }, [preferredTimeOfDayOrder]);
+  useEffect(() => { localStorage.setItem(LOCAL_STORAGE_KEYS.SCHEDULE_SEARCH_MODE, JSON.stringify(scheduleSearchMode)); }, [scheduleSearchMode]);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', 'dark');
@@ -432,7 +536,24 @@ function App() {
       setMaxClassGapHours(value);
     }
   };
-  const handlePreferredTimeOfDayChange = (e) => setPreferredTimeOfDay(e.target.value);
+  const handleMoveTimePref = (index, direction) => {
+    setPreferredTimeOfDayOrder(prev => {
+      const newOrder = [...prev];
+      const targetIndex = direction === 'up' ? index - 1 : index + 1;
+      if (targetIndex < 0 || targetIndex >= newOrder.length) return newOrder;
+      [newOrder[index], newOrder[targetIndex]] = [newOrder[targetIndex], newOrder[index]];
+      return newOrder;
+    });
+  };
+  const handleRemoveTimePref = (index) => {
+    setPreferredTimeOfDayOrder(prev => prev.filter((_, i) => i !== index));
+  };
+  const handleResetTimePrefs = () => {
+    setPreferredTimeOfDayOrder([...DEFAULT_PREFERRED_TIMES_ORDER]);
+  };
+  const handleAddTimePref = (time) => {
+    setPreferredTimeOfDayOrder(prev => prev.includes(time) ? prev : [...prev, time]);
+  };
 
   const displayedCount = useMemo(() => {
     if (!Array.isArray(processedCourses)) return 0;
@@ -520,12 +641,39 @@ function App() {
       return acc;
     }, {});
 
+    if (scheduleSearchMode === 'exhaustive' && Object.keys(coursesBySubject).length > 12) {
+      alert('Warning: Exhaustive search may be very slow for more than 12 subjects. Consider using Fast mode.');
+    }
+
+    if (scheduleSearchMode === 'exhaustive') {
+      const { bestSchedule, bestScore } = generateExhaustiveBestSchedule(coursesBySubject, preferredTimeOfDayOrder);
+      if (bestSchedule.length > 0) {
+        const isActuallyConflictFree = isScheduleConflictFree(bestSchedule, parseSchedule, checkTimeOverlap);
+        if (!isActuallyConflictFree) {
+          alert("The best schedule found still had conflicts. Please try again or adjust filters. No schedule applied.");
+          return;
+        }
+        const uniqueCourseKey = (course) => `${course.id}-${course.subject}-${course.section}`;
+        const bestScheduleKeys = new Set(bestSchedule.map(uniqueCourseKey));
+        setAllCourses(prev => prev.map(course => ({
+          ...course,
+          isLocked: bestScheduleKeys.has(uniqueCourseKey(course))
+        })));
+        setGeneratedScheduleCount(prev => prev + 1);
+        alert(`Generated optimal schedule #${generatedScheduleCount + 1} with ${bestSchedule.length} courses (${bestScore - bestSchedule.length * 100} units)`);
+      } else {
+        alert("Couldn't generate a valid schedule with current filters (exhaustive mode)");
+      }
+      return;
+    }
+
     const generateCombinationKey = (courses) => {
       return courses.map(c => c.id).sort().join(',');
     };
 
     let bestSchedule = [];
     let bestScore = -1;
+    let bestTimePrefScore = Infinity;
     let maxAttempts = 1000;
     let attempts = 0;
 
@@ -594,9 +742,14 @@ function App() {
       }, 0);
 
       const score = totalCourses * 100 + totalUnits;
+      const timePrefScore = scoreScheduleByTimePreference(currentSchedule, preferredTimeOfDayOrder);
 
-      if (score > bestScore) {
+      if (
+        score > bestScore ||
+        (score === bestScore && timePrefScore < bestTimePrefScore)
+      ) {
         bestScore = score;
+        bestTimePrefScore = timePrefScore;
         bestSchedule = currentSchedule;
       }
 
@@ -757,18 +910,48 @@ function App() {
             <small className="input-description">Enter desired max hours (0-3). 0 means back-to-back. Leave blank for no preference.</small>
           </div>
           <div className="preference-item">
-            <label htmlFor="preferredTimeSelect" className="filter-label">Preferred Time of Day:</label>
+            <label className="filter-label">Preferred Time of Day (Order):</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxWidth: 300 }}>
+              {preferredTimeOfDayOrder.length === 0 && (
+                <div style={{ color: '#888', fontStyle: 'italic' }}>No preference set (all times treated equally)</div>
+              )}
+              {preferredTimeOfDayOrder.map((time, idx) => (
+                <div key={time} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ minWidth: 90, textTransform: 'capitalize' }}>{
+                    time === 'morning' ? 'Morning (before 12 PM)' :
+                      time === 'afternoon' ? 'Afternoon (12 PM - 5 PM)' :
+                        time === 'evening' ? 'Evening (after 5 PM)' :
+                          'Any'
+                  }</span>
+                  <button type="button" onClick={() => handleMoveTimePref(idx, 'up')} disabled={idx === 0} style={{ padding: '2px 6px' }}>↑</button>
+                  <button type="button" onClick={() => handleMoveTimePref(idx, 'down')} disabled={idx === preferredTimeOfDayOrder.length - 1} style={{ padding: '2px 6px' }}>↓</button>
+                  <button type="button" onClick={() => handleRemoveTimePref(idx)} style={{ padding: '2px 6px', color: 'red' }}>✕</button>
+                </div>
+              ))}
+              <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                {[...DEFAULT_PREFERRED_TIMES_ORDER].filter(t => !preferredTimeOfDayOrder.includes(t)).map(time => (
+                  <button key={time} type="button" onClick={() => handleAddTimePref(time)} style={{ padding: '2px 8px', fontSize: '0.95em' }}>
+                    Add {time.charAt(0).toUpperCase() + time.slice(1)}
+                  </button>
+                ))}
+                <button type="button" onClick={handleResetTimePrefs} style={{ marginLeft: 'auto', fontSize: '0.95em' }}>Reset</button>
+              </div>
+            </div>
+          </div>
+          <div className="preference-item">
+            <label htmlFor="searchModeSelect" className="filter-label">Schedule Search Mode:</label>
             <select
-              id="preferredTimeSelect"
-              value={preferredTimeOfDay}
-              onChange={handlePreferredTimeOfDayChange}
+              id="searchModeSelect"
+              value={scheduleSearchMode}
+              onChange={e => setScheduleSearchMode(e.target.value)}
               className="preference-select"
             >
-              <option value="any">Any</option>
-              <option value="morning">Morning (before 12 PM)</option>
-              <option value="afternoon">Afternoon (12 PM - 5 PM)</option>
-              <option value="evening">Evening (after 5 PM)</option>
+              <option value="fast">Fast (Not Always Optimal)</option>
+              <option value="exhaustive">Exhaustive (Always Optimal, Slower)</option>
             </select>
+            <small className="input-description">
+              Fast: Finds a good schedule quickly. Exhaustive: Finds the best possible schedule, but may be slow for large course lists.
+            </small>
           </div>
         </div>
 
