@@ -1,9 +1,5 @@
 # CITU Course Builder
 
-<p align="center">
-  <img src="course-scheduler-web/src/assets/cit-u-course-builder-logo.svg" alt="CIT-U Course Builder Logo" width="220" />
-</p>
-
 A modern web application to help CIT-U students (and others) plan, filter, and optimize their class schedules.
 
 ---
