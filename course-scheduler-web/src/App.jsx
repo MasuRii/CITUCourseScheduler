@@ -1329,7 +1329,7 @@ function App() {
             />
 
             <div className="filter-section">
-              <label className="filter-label">Section Types:</label>
+              <label className="filter-label">Class Types:</label>
               <div className="section-type-filters">
                 {SECTION_TYPE_SUFFIXES.map(typeId => {
                   let description = "";
