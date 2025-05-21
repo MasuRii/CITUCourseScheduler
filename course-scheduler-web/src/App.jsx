@@ -4,6 +4,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
+import LogoDark from './assets/logo_icon_dark.svg';
+import LogoLight from './assets/logo_icon_light.svg';
 import ConfirmDialog from './components/ConfirmDialog';
 import CourseTable from './components/CourseTable';
 import RawDataInput from './components/RawDataInput';
@@ -1075,8 +1077,13 @@ function App() {
       <ToastContainer position="top-center" autoClose={4000} hideProgressBar={false} newestOnTop closeOnClick pauseOnFocusLoss draggable pauseOnHover />
       <header className="app-header">
         <div className="App">
-          <div className="app-title">
-            <h1>CIT-U Course Builder</h1>
+          <div className="app-title" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <img
+              src={theme === 'light' ? LogoLight : LogoDark}
+              alt="CIT-U Logo"
+              style={{ width: 40, height: 40, borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
+            />
+            <h1 style={{ margin: 0 }}>CIT-U Course Builder</h1>
           </div>
         </div>
       </header>
