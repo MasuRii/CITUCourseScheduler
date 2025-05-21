@@ -1,6 +1,8 @@
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import Tooltip from '@mui/material/Tooltip';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
 import CourseTable from './components/CourseTable';
 import RawDataInput from './components/RawDataInput';
@@ -624,11 +626,10 @@ function App() {
       }));
 
       setAllCourses(prevCourses => [...prevCourses, ...coursesWithDefaults]);
-
-      alert(`Added ${coursesWithDefaults.length} courses!`);
+      toast.success(`Added ${coursesWithDefaults.length} courses!`);
     } catch (error) {
       console.error("Error parsing raw data:", error);
-      alert(`Error loading data: ${error.message}`);
+      toast.error(`Error loading data: ${error.message}`);
     }
   };
   const handleDeleteCourse = (courseIdentity) => {
@@ -843,7 +844,7 @@ function App() {
     }, {});
 
     if (scheduleSearchMode === 'exhaustive' && Object.keys(coursesBySubject).length > 12) {
-      alert('Warning: Exhaustive search may be very slow for more than 12 subjects. Consider using Fast mode.');
+      toast.info('Warning: Exhaustive search may be very slow for more than 12 subjects. Consider using Fast mode.');
     }
 
     if (scheduleSearchMode === 'exhaustive') {
@@ -851,7 +852,7 @@ function App() {
       if (bestSchedule.length > 0) {
         const isActuallyConflictFree = isScheduleConflictFree(bestSchedule, parseSchedule, checkTimeOverlap);
         if (!isActuallyConflictFree) {
-          alert("The best schedule found still had conflicts. Please try again or adjust filters. No schedule applied.");
+          toast.error("The best schedule found still had conflicts. Please try again or adjust filters. No schedule applied.");
           return;
         }
         const uniqueCourseKey = (course) => `${course.id}-${course.subject}-${course.section}`;
@@ -861,9 +862,9 @@ function App() {
           isLocked: bestScheduleKeys.has(uniqueCourseKey(course))
         })));
         setGeneratedScheduleCount(prev => prev + 1);
-        alert(`Generated optimal schedule #${generatedScheduleCount + 1} with ${bestSchedule.length} courses (${bestScore - bestSchedule.length * 100} units)`);
+        toast.success(`Generated optimal schedule #${generatedScheduleCount + 1} with ${bestSchedule.length} courses (${bestScore - bestSchedule.length * 100} units)`);
       } else {
-        alert("Couldn't generate a valid schedule with current filters (exhaustive mode)");
+        toast.error("Couldn't generate a valid schedule with current filters (exhaustive mode)");
       }
       return;
     }
@@ -878,9 +879,9 @@ function App() {
           isLocked: bestScheduleKeys.has(uniqueCourseKey(course))
         })));
         setGeneratedScheduleCount(prev => prev + 1);
-        alert(`Generated best partial schedule with ${bestPartial.length} courses (${bestPartial.reduce((sum, c) => sum + (parseFloat(c.creditedUnits || c.units) || 0), 0)} units, ${new Set(bestPartial.map(c => c.subject)).size} subjects)`);
+        toast.success(`Generated best partial schedule with ${bestPartial.length} courses (${bestPartial.reduce((sum, c) => sum + (parseFloat(c.creditedUnits || c.units) || 0), 0)} units, ${new Set(bestPartial.map(c => c.subject)).size} subjects)`);
       } else {
-        alert("Couldn't generate a valid partial schedule with current filters");
+        toast.error("Couldn't generate a valid partial schedule with current filters");
       }
       return;
     }
@@ -993,7 +994,7 @@ function App() {
       );
 
       if (!isActuallyConflictFree) {
-        alert("The best schedule found still had conflicts. Please try again or adjust filters. No schedule applied.");
+        toast.error("The best schedule found still had conflicts. Please try again or adjust filters. No schedule applied.");
         console.error(
           "[generateBestSchedule] CRITICAL SAFEGUARD: Conflict found in final bestSchedule despite earlier checks. Aborting application.",
           bestSchedule.map(c => ({ id: c.id, subject: c.subject, section: c.section, schedule: c.schedule }))
@@ -1010,9 +1011,9 @@ function App() {
       })));
 
       setGeneratedScheduleCount(prev => prev + 1);
-      alert(`Generated schedule #${generatedScheduleCount + 1} with ${bestSchedule.length} courses (${bestScore - bestSchedule.length * 100} units)`);
+      toast.success(`Generated schedule #${generatedScheduleCount + 1} with ${bestSchedule.length} courses (${bestScore - bestSchedule.length * 100} units)`);
     } else {
-      alert("Couldn't generate a valid schedule with current filters");
+      toast.error("Couldn't generate a valid schedule with current filters");
     }
   };
 
@@ -1024,6 +1025,7 @@ function App() {
 
   return (
     <>
+      <ToastContainer position="top-center" autoClose={4000} hideProgressBar={false} newestOnTop closeOnClick pauseOnFocusLoss draggable pauseOnHover />
       <header className="app-header">
         <div className="App">
           <div className="app-title">
