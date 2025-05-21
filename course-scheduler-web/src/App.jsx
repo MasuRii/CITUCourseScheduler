@@ -187,7 +187,47 @@ function scoreScheduleByTimePreference(schedule, prefOrder) {
   return score;
 }
 
-function generateExhaustiveBestSchedule(coursesBySubject, preferredTimeOfDayOrder) {
+function exceedsMaxUnits(schedule, maxUnits) {
+  if (!maxUnits) return false;
+  const totalUnits = schedule.reduce((sum, course) => {
+    const units = parseFloat(course.creditedUnits || course.units);
+    return isNaN(units) ? sum : sum + units;
+  }, 0);
+  return totalUnits > parseFloat(maxUnits);
+}
+
+function exceedsMaxGap(schedule, maxGapHours) {
+  if (!maxGapHours) return false;
+  const daySlots = {};
+  for (const course of schedule) {
+    const parsed = parseSchedule(course.schedule);
+    if (!parsed || parsed.isTBA || !parsed.allTimeSlots) continue;
+    for (const slot of parsed.allTimeSlots) {
+      for (const day of slot.days) {
+        if (!daySlots[day]) daySlots[day] = [];
+        daySlots[day].push({ start: slot.startTime, end: slot.endTime });
+      }
+    }
+  }
+  for (const slots of Object.values(daySlots)) {
+    slots.sort((a, b) => a.start.localeCompare(b.start));
+    for (let i = 1; i < slots.length; i++) {
+      const prevEnd = slots[i - 1].end;
+      const currStart = slots[i].start;
+      if (prevEnd && currStart) {
+        const [ph, pm] = prevEnd.split(":").map(Number);
+        const [ch, cm] = currStart.split(":").map(Number);
+        const gap = (ch + cm / 60) - (ph + pm / 60);
+        if (gap > parseFloat(maxGapHours)) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+function generateExhaustiveBestSchedule(coursesBySubject, preferredTimeOfDayOrder, maxUnits, maxGapHours) {
   const subjects = Object.keys(coursesBySubject);
   let bestSchedule = [];
   let bestScore = -1;
@@ -196,6 +236,8 @@ function generateExhaustiveBestSchedule(coursesBySubject, preferredTimeOfDayOrde
   function backtrack(idx, currentSchedule) {
     if (idx === subjects.length) {
       if (!isScheduleConflictFree(currentSchedule, parseSchedule, checkTimeOverlap)) return;
+      if (exceedsMaxUnits(currentSchedule, maxUnits)) return;
+      if (exceedsMaxGap(currentSchedule, maxGapHours)) return;
       const totalCourses = currentSchedule.length;
       const totalUnits = currentSchedule.reduce((sum, course) => {
         const units = parseFloat(course.creditedUnits || course.units);
@@ -247,6 +289,92 @@ function generateExhaustiveBestSchedule(coursesBySubject, preferredTimeOfDayOrde
   }
   backtrack(0, []);
   return { bestSchedule, bestScore, bestTimePrefScore };
+}
+
+// Helper to get all subsets (powerset) of an array (up to a reasonable size)
+function getAllSubsets(arr) {
+  const result = [[]];
+  for (const item of arr) {
+    const len = result.length;
+    for (let i = 0; i < len; i++) {
+      result.push([...result[i], item]);
+    }
+  }
+  return result;
+}
+
+function generateBestPartialSchedule(courses, maxUnits, maxGapHours, preferredTimeOfDayOrder) {
+  // For small lists, use powerset
+  if (courses.length <= 15) {
+    let best = [];
+    let bestSubjects = 0;
+    let bestUnits = 0;
+    let bestTimePref = Infinity;
+    const allSubsets = getAllSubsets(courses);
+    for (const subset of allSubsets) {
+      if (subset.length === 0) continue;
+      if (!isScheduleConflictFree(subset, parseSchedule, checkTimeOverlap)) continue;
+      if (exceedsMaxUnits(subset, maxUnits)) continue;
+      if (exceedsMaxGap(subset, maxGapHours)) continue;
+      const uniqueSubjects = new Set(subset.map(c => c.subject)).size;
+      const totalUnits = subset.reduce((sum, c) => sum + (parseFloat(c.creditedUnits || c.units) || 0), 0);
+      const timePrefScore = scoreScheduleByTimePreference(subset, preferredTimeOfDayOrder);
+      if (
+        uniqueSubjects > bestSubjects ||
+        (uniqueSubjects === bestSubjects && totalUnits > bestUnits) ||
+        (uniqueSubjects === bestSubjects && totalUnits === bestUnits && timePrefScore < bestTimePref)
+      ) {
+        best = subset;
+        bestSubjects = uniqueSubjects;
+        bestUnits = totalUnits;
+        bestTimePref = timePrefScore;
+      }
+    }
+    return best;
+  } else {
+    // Greedy: add courses by subject, highest units first, if they fit
+    const bySubject = {};
+    for (const c of courses) {
+      if (!bySubject[c.subject]) bySubject[c.subject] = [];
+      bySubject[c.subject].push(c);
+    }
+    const subjects = Object.keys(bySubject);
+    let best = [];
+    let bestSubjects = 0;
+    let bestUnits = 0;
+    let bestTimePref = Infinity;
+    // Try all subject orderings (limited to 1000 random shuffles for performance)
+    for (let attempt = 0; attempt < 1000; attempt++) {
+      const shuffledSubjects = [...subjects].sort(() => Math.random() - 0.5);
+      let current = [];
+      for (const subj of shuffledSubjects) {
+        const candidates = bySubject[subj].sort((a, b) => (parseFloat(b.creditedUnits || b.units) || 0) - (parseFloat(a.creditedUnits || a.units) || 0));
+        for (const c of candidates) {
+          const test = [...current, c];
+          if (!isScheduleConflictFree(test, parseSchedule, checkTimeOverlap)) continue;
+          if (exceedsMaxUnits(test, maxUnits)) continue;
+          if (exceedsMaxGap(test, maxGapHours)) continue;
+          current.push(c);
+          break;
+        }
+        // If none fit, skip this subject
+      }
+      const uniqueSubjects = new Set(current.map(c => c.subject)).size;
+      const totalUnits = current.reduce((sum, c) => sum + (parseFloat(c.creditedUnits || c.units) || 0), 0);
+      const timePrefScore = scoreScheduleByTimePreference(current, preferredTimeOfDayOrder);
+      if (
+        uniqueSubjects > bestSubjects ||
+        (uniqueSubjects === bestSubjects && totalUnits > bestUnits) ||
+        (uniqueSubjects === bestSubjects && totalUnits === bestUnits && timePrefScore < bestTimePref)
+      ) {
+        best = current;
+        bestSubjects = uniqueSubjects;
+        bestUnits = totalUnits;
+        bestTimePref = timePrefScore;
+      }
+    }
+    return best;
+  }
 }
 
 function App() {
@@ -655,7 +783,7 @@ function App() {
     }
 
     if (scheduleSearchMode === 'exhaustive') {
-      const { bestSchedule, bestScore } = generateExhaustiveBestSchedule(coursesBySubject, preferredTimeOfDayOrder);
+      const { bestSchedule, bestScore } = generateExhaustiveBestSchedule(coursesBySubject, preferredTimeOfDayOrder, maxUnits, maxClassGapHours);
       if (bestSchedule.length > 0) {
         const isActuallyConflictFree = isScheduleConflictFree(bestSchedule, parseSchedule, checkTimeOverlap);
         if (!isActuallyConflictFree) {
@@ -672,6 +800,24 @@ function App() {
         alert(`Generated optimal schedule #${generatedScheduleCount + 1} with ${bestSchedule.length} courses (${bestScore - bestSchedule.length * 100} units)`);
       } else {
         alert("Couldn't generate a valid schedule with current filters (exhaustive mode)");
+      }
+      return;
+    }
+
+    if (scheduleSearchMode === 'partial') {
+      // Use all unlocked courses
+      const bestPartial = generateBestPartialSchedule(filteredCourses, maxUnits, maxClassGapHours, preferredTimeOfDayOrder);
+      if (bestPartial.length > 0) {
+        const uniqueCourseKey = (course) => `${course.id}-${course.subject}-${course.section}`;
+        const bestScheduleKeys = new Set(bestPartial.map(uniqueCourseKey));
+        setAllCourses(prev => prev.map(course => ({
+          ...course,
+          isLocked: bestScheduleKeys.has(uniqueCourseKey(course))
+        })));
+        setGeneratedScheduleCount(prev => prev + 1);
+        alert(`Generated best partial schedule with ${bestPartial.length} courses (${bestPartial.reduce((sum, c) => sum + (parseFloat(c.creditedUnits || c.units) || 0), 0)} units, ${new Set(bestPartial.map(c => c.subject)).size} subjects)`);
+      } else {
+        alert("Couldn't generate a valid partial schedule with current filters");
       }
       return;
     }
@@ -734,6 +880,14 @@ function App() {
       });
 
       if (!isScheduleConflictFree(currentSchedule, parseSchedule, checkTimeOverlap)) {
+        continue;
+      }
+
+      if (exceedsMaxUnits(currentSchedule, maxUnits)) {
+        continue;
+      }
+
+      if (exceedsMaxGap(currentSchedule, maxClassGapHours)) {
         continue;
       }
 
@@ -911,13 +1065,12 @@ function App() {
               id="maxGapInput"
               value={maxClassGapHours}
               onChange={handleMaxClassGapHoursChange}
-              placeholder="e.g., 1 (0 to 3)"
+              placeholder="e.g., 1 (0.5, 1, 1.5, ...)"
               min="0"
-              max="3"
               step="0.5"
               className="preference-input"
             />
-            <small className="input-description">Enter desired max hours (0-3). 0 means back-to-back. Leave blank for no preference.</small>
+            <small className="input-description">Enter desired max gap in hours (e.g., 0.5, 1, 1.5, ...). 0 means back-to-back. Leave blank for no preference.</small>
           </div>
           <div className="preference-item">
             <label className="filter-label">Preferred Time of Day (Order):</label>
@@ -977,6 +1130,7 @@ function App() {
             >
               <option value="fast">Fast (Not Always Optimal)</option>
               <option value="exhaustive">Exhaustive (Always Optimal, Slower)</option>
+              <option value="partial">Best Partial (Maximize Subjects/Units)</option>
             </select>
             <small className="input-description">
               Fast: Finds a good schedule quickly. Exhaustive: Finds the best possible schedule, but may be slow for large course lists.
