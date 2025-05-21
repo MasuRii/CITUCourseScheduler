@@ -504,7 +504,6 @@ button:focus-visible {
 }
 
 .course-table td.actions-cell {
-  display: flex;
   gap: var(--space-2);
   justify-content: center;
   align-items: center;
@@ -715,7 +714,7 @@ button:focus-visible {
 }
 
 textarea {
-  width: 100%;
+  width: 99%;
   font-family: var(--font-family-monospace);
   font-size: var(--font-size-sm);
   padding: var(--space-3);
@@ -764,7 +763,6 @@ input[type="time"]:focus-visible {
   text-align: left !important;
   color: var(--text-color);
   background: linear-gradient(90deg, var(--header-bg) 0%, transparent 5%);
-  border-left: 4px solid var(--header-bg);
 }
 
 .react-datepicker-wrapper input {
