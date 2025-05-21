@@ -1536,3 +1536,35 @@ a:focus {
   color: #d1b3ff;
   text-decoration: underline;
 }
+
+.preferences-filters-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-5);
+}
+
+.preferences-filters-grid>.first-column-preferences {
+  grid-column-start: 1;
+}
+
+.preferences-filters-grid>.preference-item,
+.preferences-filters-grid>.filter-section,
+.preferences-filters-grid>.time-filter {}
+
+.preferences-filters-grid>.preferred-time-preference-item {
+  grid-column-start: 2;
+  grid-row-start: 1;
+}
+
+@media (max-width: 768px) {
+  .preferences-filters-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
+
+  .preferences-filters-grid>.first-column-preferences,
+  .preferences-filters-grid>.preferred-time-preference-item {
+    grid-column-start: auto;
+    grid-row-start: auto;
+  }
+}

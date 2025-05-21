@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
+import ConfirmDialog from './components/ConfirmDialog';
 import CourseTable from './components/CourseTable';
 import RawDataInput from './components/RawDataInput';
 import TimeFilter from './components/TimeFilter';
@@ -478,6 +479,32 @@ function App() {
     return ALLOWED_SEARCH_MODES.includes(saved) ? saved : 'partial';
   });
 
+  const [confirmDialog, setConfirmDialog] = useState({
+    open: false,
+    title: '',
+    message: '',
+    onConfirm: null,
+    onCancel: null,
+    confirmText: 'Confirm',
+    cancelText: 'Cancel',
+  });
+
+  const handleClearAllLocks = () => {
+    setConfirmDialog({
+      open: true,
+      title: 'Clear All Locks',
+      message: 'Are you sure you want to clear all locks? This will unlock all courses.',
+      confirmText: 'Clear All',
+      cancelText: 'Cancel',
+      onConfirm: () => {
+        setAllCourses(prev => prev.map(c => ({ ...c, isLocked: false })));
+        setConfirmDialog(d => ({ ...d, open: false }));
+        toast.success('All locks cleared!');
+      },
+      onCancel: () => setConfirmDialog(d => ({ ...d, open: false })),
+    });
+  };
+
   useEffect(() => { localStorage.setItem(LOCAL_STORAGE_KEYS.COURSES, JSON.stringify(allCourses)); }, [allCourses]);
   useEffect(() => { localStorage.setItem(LOCAL_STORAGE_KEYS.EXCLUDED_DAYS, JSON.stringify(excludedDays)); }, [excludedDays]);
   useEffect(() => { localStorage.setItem(LOCAL_STORAGE_KEYS.EXCLUDED_RANGES, JSON.stringify(excludedTimeRanges)); }, [excludedTimeRanges]);
@@ -636,8 +663,19 @@ function App() {
     const { id, subject, section } = courseIdentity;
     setAllCourses(prev => prev.filter(c => !(c.id === id && c.subject === subject && c.section === section)));
   };
-  const handleDeleteAllCourses = () => { if (!window.confirm("Delete ALL courses? This cannot be undone.")) return; setAllCourses([]); setRawData(''); };
-  const handleClearAllLocks = () => { if (!window.confirm("Clear ALL locks? This will unlock all courses.")) return; setAllCourses(prev => prev.map(c => ({ ...c, isLocked: false }))); };
+  const handleDeleteAllCourses = () => {
+    setConfirmDialog({
+      open: true,
+      title: 'Delete All Courses',
+      message: 'Delete ALL courses? This cannot be undone.',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      onConfirm: () => {
+        setAllCourses([]); setRawData(''); setConfirmDialog(d => ({ ...d, open: false }));
+      },
+      onCancel: () => setConfirmDialog(d => ({ ...d, open: false })),
+    });
+  };
   const handleToggleLockCourse = (courseIdentity) => {
     const { id, subject, section } = courseIdentity;
     console.log('Toggling lock for course:', courseIdentity);
@@ -702,14 +740,23 @@ function App() {
     if (conflictingCourses.length > 0) {
       console.log('Conflicting courses:', conflictingCourses);
       const courseNames = conflictingCourses.map(c => `${c.subject} ${c.section}`).join(', ');
-      const confirmMessage = `This course conflicts with ${conflictingCourses.length} locked course(s): ${courseNames}. Do you still want to lock it?`;
-
-      console.log('Showing confirmation dialog:', confirmMessage);
-      if (!window.confirm(confirmMessage)) {
-        console.log('User canceled locking the course');
-        return;
-      }
-      console.log('User confirmed locking the course despite conflicts');
+      setConfirmDialog({
+        open: true,
+        title: 'Schedule Conflict',
+        message: `This course conflicts with ${conflictingCourses.length} locked course(s): ${courseNames}. Do you still want to lock it?`,
+        confirmText: 'Lock Anyway',
+        cancelText: 'Cancel',
+        onConfirm: () => {
+          setAllCourses(prev => prev.map(c =>
+            c.id === id && c.subject === subject && c.section === section
+              ? { ...c, isLocked: true }
+              : c
+          ));
+          setConfirmDialog(d => ({ ...d, open: false }));
+        },
+        onCancel: () => setConfirmDialog(d => ({ ...d, open: false })),
+      });
+      return;
     }
 
     console.log('Locking the course');
@@ -1111,148 +1158,152 @@ function App() {
 
         <div className="section-container user-preferences-section">
           <h2>User Preferences</h2>
-          <div className="preference-item" style={{ marginBottom: '1.5rem' }}>
-            <label htmlFor="searchModeSelect" className="filter-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5em' }}>
-              Schedule Search Mode
-              <Tooltip
-                title={
-                  <span style={{ whiteSpace: 'pre-line' }}>
-                    {'Schedule Search Modes:\n'}
-                    {'- Recommended (Flexible, Best Fit): Maximizes the number of subjects and units in your schedule, even if not all subjects fit. Best for most users.\n'}
-                    {'- Full Coverage (All Subjects, Strict): Only generates a schedule if all subjects can fit within your constraints. Use if you must take every subject.\n'}
-                    {'- Quick (Fast, May Miss Best): Finds a schedule quickly, but may not be the best possible combination.'}
-                  </span>
-                }
-                arrow
-                placement="right"
-              >
-                <InfoOutlinedIcon style={{ color: '#1976d2', cursor: 'pointer', fontSize: 20 }} />
-              </Tooltip>
-            </label>
-            <select
-              id="searchModeSelect"
-              value={scheduleSearchMode}
-              onChange={e => setScheduleSearchMode(e.target.value)}
-              className="preference-select"
-            >
-              <option value="partial">Recommended (Flexible, Best Fit)</option>
-              <option value="exhaustive">Full Coverage (All Subjects, Strict)</option>
-              <option value="fast">Quick (Fast, May Miss Best)</option>
-            </select>
-          </div>
-          <div className="preference-item">
-            <label htmlFor="maxUnitsInput" className="filter-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5em' }}>
-              Maximum Units
-              <Tooltip
-                title={
-                  <span style={{ whiteSpace: 'pre-line' }}>
-                    {'Set the maximum total number of units you want in your schedule.\n'}
-                    {'Leave blank for no limit.'}
-                  </span>
-                }
-                arrow
-                placement="right"
-              >
-                <InfoOutlinedIcon style={{ color: '#1976d2', cursor: 'pointer', fontSize: 20 }} />
-              </Tooltip>
-            </label>
-            <input
-              type="number"
-              id="maxUnitsInput"
-              value={maxUnits}
-              onChange={handleMaxUnitsChange}
-              placeholder="e.g., 18"
-              min="0"
-              className="preference-input"
-            />
-          </div>
-          <div className="preference-item">
-            <label htmlFor="maxGapInput" className="filter-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5em' }}>
-              Maximum Break Between Classes
-              <Tooltip
-                title={
-                  <span style={{ whiteSpace: 'pre-line' }}>
-                    {'Enter the maximum break (gap) allowed between classes.\n'}
-                    {'For example: '}<b>0</b>{' = No break (back-to-back), '}<b>0.5</b>{' = 30 minutes, '}<b>1</b>{' = 1 hour, '}<b>1.5</b>{' = 1 hour 30 minutes, '}<b>2</b>{' = 2 hours.'}
-                  </span>
-                }
-                arrow
-                placement="right"
-              >
-                <InfoOutlinedIcon style={{ color: '#1976d2', cursor: 'pointer', fontSize: 20 }} />
-              </Tooltip>
-            </label>
-            <input
-              type="number"
-              id="maxGapInput"
-              value={maxClassGapHours}
-              onChange={handleMaxClassGapHoursChange}
-              placeholder="e.g., 1 hour, 0.5 for 30 min, 2 for 2 hours"
-              min="0"
-              step="0.5"
-              className="preference-input"
-            />
-          </div>
-          <div className="preference-item">
-            <label className="filter-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5em' }}>
-              Preferred Time of Day (Order)
-              <Tooltip
-                title={
-                  <span style={{ whiteSpace: 'pre-line' }}>
-                    {'Drag to reorder your preferred times of day.\n'}
-                    {'The scheduler will try to prioritize classes in your top choices.\n'}
-                    {'For example, if "Morning" is first, it will try to schedule more morning classes.'}
-                  </span>
-                }
-                arrow
-                placement="right"
-              >
-                <InfoOutlinedIcon style={{ color: '#1976d2', cursor: 'pointer', fontSize: 20 }} />
-              </Tooltip>
-            </label>
-            <div className="preferred-time-order-container">
-              <div className="preferred-time-order-note">Drag to reorder your preferred times of day.</div>
-              <ul className="preferred-time-order-list">
-                {preferredTimeOfDayOrder.length === 0 && (
-                  <li className="preferred-time-order-empty">No preference set (all times treated equally)</li>
-                )}
-                {preferredTimeOfDayOrder.map((time, idx) => (
-                  <li
-                    key={time}
-                    className="preferred-time-order-item"
-                    draggable
-                    onDragStart={e => {
-                      e.dataTransfer.setData('text/plain', idx);
-                    }}
-                    onDragOver={e => e.preventDefault()}
-                    onDrop={e => {
-                      const fromIdx = Number(e.dataTransfer.getData('text/plain'));
-                      if (fromIdx === idx) return;
-                      setPreferredTimeOfDayOrder(prev => {
-                        const newOrder = [...prev];
-                        const [moved] = newOrder.splice(fromIdx, 1);
-                        newOrder.splice(idx, 0, moved);
-                        return newOrder;
-                      });
-                    }}
+          <div className="preferences-filters-grid">
+            <div className="first-column-preferences">
+              <div className="preference-item" style={{ marginBottom: '1.5rem' }}>
+                <label htmlFor="searchModeSelect" className="filter-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5em' }}>
+                  Schedule Search Mode
+                  <Tooltip
+                    title={
+                      <span style={{ whiteSpace: 'pre-line' }}>
+                        {'Schedule Search Modes:\n'}
+                        {'- Recommended (Flexible, Best Fit): Maximizes the number of subjects and units in your schedule, even if not all subjects fit. Best for most users.\n'}
+                        {'- Full Coverage (All Subjects, Strict): Only generates a schedule if all subjects can fit within your constraints. Use if you must take every subject.\n'}
+                        {'- Quick (Fast, May Miss Best): Finds a schedule quickly, but may not be the best possible combination.'}
+                      </span>
+                    }
+                    arrow
+                    placement="right"
                   >
-                    <span className="preferred-time-label">{
-                      time === 'morning' ? 'Morning (before 12 PM)' :
-                        time === 'afternoon' ? 'Afternoon (12 PM - 5 PM)' :
-                          time === 'evening' ? 'Evening (after 5 PM)' :
-                            'Any'
-                    }</span>
-                    <button type="button" className="preferred-time-remove" onClick={() => handleRemoveTimePref(idx)}>✕</button>
-                  </li>
-                ))}
-              </ul>
-              <div className="preferred-time-order-actions">
-                {[...DEFAULT_PREFERRED_TIMES_ORDER].filter(t => !preferredTimeOfDayOrder.includes(t)).map(time => (
-                  <button key={time} type="button" className="preferred-time-add" onClick={() => handleAddTimePref(time)}>
-                    Add {time.charAt(0).toUpperCase() + time.slice(1)}
-                  </button>
-                ))}
-                <button type="button" className="preferred-time-reset" onClick={handleResetTimePrefs}>Reset</button>
+                    <InfoOutlinedIcon style={{ color: '#1976d2', cursor: 'pointer', fontSize: 20 }} />
+                  </Tooltip>
+                </label>
+                <select
+                  id="searchModeSelect"
+                  value={scheduleSearchMode}
+                  onChange={e => setScheduleSearchMode(e.target.value)}
+                  className="preference-select"
+                >
+                  <option value="partial">Recommended (Flexible, Best Fit)</option>
+                  <option value="exhaustive">Full Coverage (All Subjects, Strict)</option>
+                  <option value="fast">Quick (Fast, May Miss Best)</option>
+                </select>
+              </div>
+              <div className="preference-item">
+                <label htmlFor="maxUnitsInput" className="filter-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5em' }}>
+                  Maximum Units
+                  <Tooltip
+                    title={
+                      <span style={{ whiteSpace: 'pre-line' }}>
+                        {'Set the maximum total number of units you want in your schedule.\n'}
+                        {'Leave blank for no limit.'}
+                      </span>
+                    }
+                    arrow
+                    placement="right"
+                  >
+                    <InfoOutlinedIcon style={{ color: '#1976d2', cursor: 'pointer', fontSize: 20 }} />
+                  </Tooltip>
+                </label>
+                <input
+                  type="number"
+                  id="maxUnitsInput"
+                  value={maxUnits}
+                  onChange={handleMaxUnitsChange}
+                  placeholder="e.g., 18"
+                  min="0"
+                  className="preference-input"
+                />
+              </div>
+              <div className="preference-item">
+                <label htmlFor="maxGapInput" className="filter-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5em' }}>
+                  Maximum Break Between Classes
+                  <Tooltip
+                    title={
+                      <span style={{ whiteSpace: 'pre-line' }}>
+                        {'Enter the maximum break (gap) allowed between classes.\n'}
+                        {'For example: '}<b>0</b>{' = No break (back-to-back), '}<b>0.5</b>{' = 30 minutes, '}<b>1</b>{' = 1 hour, '}<b>1.5</b>{' = 1 hour 30 minutes, '}<b>2</b>{' = 2 hours.'}
+                      </span>
+                    }
+                    arrow
+                    placement="right"
+                  >
+                    <InfoOutlinedIcon style={{ color: '#1976d2', cursor: 'pointer', fontSize: 20 }} />
+                  </Tooltip>
+                </label>
+                <input
+                  type="number"
+                  id="maxGapInput"
+                  value={maxClassGapHours}
+                  onChange={handleMaxClassGapHoursChange}
+                  placeholder="e.g., 1 hour, 0.5 for 30 min, 2 for 2 hours"
+                  min="0"
+                  step="0.5"
+                  className="preference-input"
+                />
+              </div>
+            </div>
+            <div className="preference-item preferred-time-preference-item">
+              <label className="filter-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5em' }}>
+                Preferred Time of Day (Order)
+                <Tooltip
+                  title={
+                    <span style={{ whiteSpace: 'pre-line' }}>
+                      {'Drag to reorder your preferred times of day.\n'}
+                      {'The scheduler will try to prioritize classes in your top choices.\n'}
+                      {'For example, if "Morning" is first, it will try to schedule more morning classes.'}
+                    </span>
+                  }
+                  arrow
+                  placement="right"
+                >
+                  <InfoOutlinedIcon style={{ color: '#1976d2', cursor: 'pointer', fontSize: 20 }} />
+                </Tooltip>
+              </label>
+              <div className="preferred-time-order-container">
+                <div className="preferred-time-order-note">Drag to reorder your preferred times of day.</div>
+                <ul className="preferred-time-order-list">
+                  {preferredTimeOfDayOrder.length === 0 && (
+                    <li className="preferred-time-order-empty">No preference set (all times treated equally)</li>
+                  )}
+                  {preferredTimeOfDayOrder.map((time, idx) => (
+                    <li
+                      key={time}
+                      className="preferred-time-order-item"
+                      draggable
+                      onDragStart={e => {
+                        e.dataTransfer.setData('text/plain', idx);
+                      }}
+                      onDragOver={e => e.preventDefault()}
+                      onDrop={e => {
+                        const fromIdx = Number(e.dataTransfer.getData('text/plain'));
+                        if (fromIdx === idx) return;
+                        setPreferredTimeOfDayOrder(prev => {
+                          const newOrder = [...prev];
+                          const [moved] = newOrder.splice(fromIdx, 1);
+                          newOrder.splice(idx, 0, moved);
+                          return newOrder;
+                        });
+                      }}
+                    >
+                      <span className="preferred-time-label">{
+                        time === 'morning' ? 'Morning (before 12 PM)' :
+                          time === 'afternoon' ? 'Afternoon (12 PM - 5 PM)' :
+                            time === 'evening' ? 'Evening (after 5 PM)' :
+                              'Any'
+                      }</span>
+                      <button type="button" className="preferred-time-remove" onClick={() => handleRemoveTimePref(idx)}>✕</button>
+                    </li>
+                  ))}
+                </ul>
+                <div className="preferred-time-order-actions">
+                  {[...DEFAULT_PREFERRED_TIMES_ORDER].filter(t => !preferredTimeOfDayOrder.includes(t)).map(time => (
+                    <button key={time} type="button" className="preferred-time-add" onClick={() => handleAddTimePref(time)}>
+                      Add {time.charAt(0).toUpperCase() + time.slice(1)}
+                    </button>
+                  ))}
+                  <button type="button" className="preferred-time-reset" onClick={handleResetTimePrefs}>Reset</button>
+                </div>
               </div>
             </div>
           </div>
@@ -1260,35 +1311,37 @@ function App() {
 
         <div className="section-container">
           <h2>Course Filters</h2>
-          <TimeFilter
-            excludedDays={excludedDays}
-            excludedTimeRanges={excludedTimeRanges}
-            onDayChange={handleDayChange}
-            onTimeRangeChange={handleTimeRangeChange}
-            onAddTimeRange={handleAddTimeRange}
-            onRemoveTimeRange={handleRemoveTimeRange}
-          />
+          <div className="preferences-filters-grid">
+            <TimeFilter
+              excludedDays={excludedDays}
+              excludedTimeRanges={excludedTimeRanges}
+              onDayChange={handleDayChange}
+              onTimeRangeChange={handleTimeRangeChange}
+              onAddTimeRange={handleAddTimeRange}
+              onRemoveTimeRange={handleRemoveTimeRange}
+            />
 
-          <div className="filter-section">
-            <label className="filter-label">Section Types:</label>
-            <div className="section-type-filters">
-              {SECTION_TYPE_SUFFIXES.map(typeId => {
-                let description = "";
-                if (typeId === "AP3") description = "Online Class";
-                if (typeId === "AP4") description = "Face-to-Face";
-                if (typeId === "AP5") description = "Hybrid (F2F & Online)";
+            <div className="filter-section">
+              <label className="filter-label">Section Types:</label>
+              <div className="section-type-filters">
+                {SECTION_TYPE_SUFFIXES.map(typeId => {
+                  let description = "";
+                  if (typeId === "AP3") description = "Online Class";
+                  if (typeId === "AP4") description = "Face-to-Face";
+                  if (typeId === "AP5") description = "Hybrid (F2F & Online)";
 
-                return (
-                  <label key={typeId} className="section-type-checkbox">
-                    <input
-                      type="checkbox"
-                      checked={selectedSectionTypes.includes(typeId)}
-                      onChange={(e) => handleSectionTypeChange(typeId, e.target.checked)}
-                    />
-                    <span>{typeId} - {description}</span>
-                  </label>
-                );
-              })}
+                  return (
+                    <label key={typeId} className="section-type-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={selectedSectionTypes.includes(typeId)}
+                        onChange={(e) => handleSectionTypeChange(typeId, e.target.checked)}
+                      />
+                      <span>{typeId} - {description}</span>
+                    </label>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
@@ -1350,6 +1403,16 @@ function App() {
           />
         </div>
       </div>
+
+      <ConfirmDialog
+        open={confirmDialog.open}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        confirmText={confirmDialog.confirmText}
+        cancelText={confirmDialog.cancelText}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={confirmDialog.onCancel}
+      />
     </>
   );
 }
