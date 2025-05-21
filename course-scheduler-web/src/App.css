@@ -1307,7 +1307,7 @@ input[type="time"]:focus-visible {
 .preference-input,
 .preference-select {
   width: 100%;
-  max-width: 250px;
+  max-width: 300px;
   padding: var(--space-2) var(--space-3);
   border: 1px solid var(--input-border);
   border-radius: 6px;

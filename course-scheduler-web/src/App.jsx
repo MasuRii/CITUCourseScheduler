@@ -1,3 +1,5 @@
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import Tooltip from '@mui/material/Tooltip';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import './App.css';
 import CourseTable from './components/CourseTable';
@@ -31,7 +33,8 @@ const SECTION_TYPE_SUFFIXES = ['AP3', 'AP4', 'AP5'];
 const ALLOWED_STATUS_FILTERS = ['all', 'open', 'closed'];
 const ALLOWED_PREFERRED_TIMES = ['any', 'morning', 'afternoon', 'evening'];
 const DEFAULT_PREFERRED_TIMES_ORDER = ['morning', 'afternoon', 'evening', 'any'];
-const ALLOWED_SEARCH_MODES = ['fast', 'exhaustive'];
+const ALLOWED_SEARCH_MODES = ['fast', 'exhaustive', 'partial'];
+const SMALL_N_THRESHOLD_PARTIAL = 12;
 
 const loadFromLocalStorage = (key, defaultValue) => {
   if (typeof window === 'undefined' || !window.localStorage) {
@@ -39,7 +42,7 @@ const loadFromLocalStorage = (key, defaultValue) => {
   }
   try {
     const saved = localStorage.getItem(key);
-    if (saved === null) { return defaultValue; }
+    if (saved === null) return defaultValue;
     const parsed = JSON.parse(saved);
 
     if (key === LOCAL_STORAGE_KEYS.THEME) {
@@ -73,7 +76,7 @@ const loadFromLocalStorage = (key, defaultValue) => {
       return ALLOWED_PREFERRED_TIMES.includes(parsed) ? parsed : defaultValue;
     }
     if (key === LOCAL_STORAGE_KEYS.SCHEDULE_SEARCH_MODE) {
-      return ALLOWED_SEARCH_MODES.includes(parsed) ? parsed : 'exhaustive';
+      return ALLOWED_SEARCH_MODES.includes(parsed) ? parsed : 'partial';
     }
 
     return parsed;
@@ -89,7 +92,7 @@ const loadFromLocalStorage = (key, defaultValue) => {
     if (key === LOCAL_STORAGE_KEYS.MAX_UNITS) return '';
     if (key === LOCAL_STORAGE_KEYS.MAX_CLASS_GAP_HOURS) return '';
     if (key === LOCAL_STORAGE_KEYS.PREFERRED_TIME_OF_DAY) return 'any';
-    if (key === LOCAL_STORAGE_KEYS.SCHEDULE_SEARCH_MODE) return 'exhaustive';
+    if (key === LOCAL_STORAGE_KEYS.SCHEDULE_SEARCH_MODE) return 'partial';
     return defaultValue;
   }
 };
@@ -291,7 +294,6 @@ function generateExhaustiveBestSchedule(coursesBySubject, preferredTimeOfDayOrde
   return { bestSchedule, bestScore, bestTimePrefScore };
 }
 
-// Helper to get all subsets (powerset) of an array (up to a reasonable size)
 function getAllSubsets(arr) {
   const result = [[]];
   for (const item of arr) {
@@ -303,9 +305,105 @@ function getAllSubsets(arr) {
   return result;
 }
 
+function generateBestPartialSchedule_Heuristic(
+  courses,
+  maxUnits,
+  maxGapHours,
+  preferredTimeOfDayOrder
+) {
+  let bestOverallSchedule = [];
+  let bestOverallSubjectsCount = 0;
+  let bestOverallUnits = 0;
+  let bestOverallTimePref = Infinity;
+
+  const numCourses = courses.length;
+  const NUM_ATTEMPTS = Math.min(500, Math.max(50, numCourses * 2));
+
+  for (let attempt = 0; attempt < NUM_ATTEMPTS; attempt++) {
+    let currentSchedule = [];
+    let currentSubjectsSet = new Set();
+    let poolOfCandidatesForAttempt = [...courses];
+    poolOfCandidatesForAttempt.sort(() => Math.random() - 0.5);
+
+    while (true) {
+      let bestCandidateToAddThisPass = null;
+      let bestPriorityForThisPass = -1;
+      let indexOfBestCandidateInPool = -1;
+
+      for (let i = 0; i < poolOfCandidatesForAttempt.length; i++) {
+        const candidate = poolOfCandidatesForAttempt[i];
+        if (currentSubjectsSet.has(candidate.subject)) continue;
+        const tempScheduleWithCandidateForConstraints = [...currentSchedule, candidate];
+        if (exceedsMaxUnits(tempScheduleWithCandidateForConstraints, maxUnits)) continue;
+        if (exceedsMaxGap(tempScheduleWithCandidateForConstraints, maxGapHours)) continue;
+        let conflictsWithCurrent = false;
+        const candidateScheduleResult = parseSchedule(candidate.schedule);
+        if (candidateScheduleResult && !candidateScheduleResult.isTBA && candidateScheduleResult.allTimeSlots && candidateScheduleResult.allTimeSlots.length > 0) {
+          for (const existingCourse of currentSchedule) {
+            const existingScheduleResult = parseSchedule(existingCourse.schedule);
+            if (!existingScheduleResult || existingScheduleResult.isTBA || !existingScheduleResult.allTimeSlots || existingScheduleResult.allTimeSlots.length === 0) continue;
+            let pairConflict = false;
+            for (const slot1 of candidateScheduleResult.allTimeSlots) {
+              for (const slot2 of existingScheduleResult.allTimeSlots) {
+                const commonDays = slot1.days.filter(day => slot2.days.includes(day));
+                if (commonDays.length > 0) {
+                  if (slot1.startTime && slot1.endTime && slot2.startTime && slot2.endTime) {
+                    if (checkTimeOverlap(slot1.startTime, slot1.endTime, slot2.startTime, slot2.endTime)) {
+                      pairConflict = true; break;
+                    }
+                  }
+                }
+              }
+              if (pairConflict) break;
+            }
+            if (pairConflict) { conflictsWithCurrent = true; break; }
+          }
+        }
+        if (conflictsWithCurrent) continue;
+        const units = parseFloat(candidate.creditedUnits || candidate.units) || 0;
+        let priority = 0;
+        if (!currentSubjectsSet.has(candidate.subject)) {
+          priority = 20000 + units;
+        } else {
+          priority = 10000 + units;
+        }
+        priority += Math.random() * 0.1;
+        if (priority > bestPriorityForThisPass) {
+          bestCandidateToAddThisPass = candidate;
+          bestPriorityForThisPass = priority;
+          indexOfBestCandidateInPool = i;
+        }
+      }
+      if (bestCandidateToAddThisPass) {
+        currentSchedule.push(bestCandidateToAddThisPass);
+        currentSubjectsSet.add(bestCandidateToAddThisPass.subject);
+        poolOfCandidatesForAttempt.splice(indexOfBestCandidateInPool, 1);
+      } else {
+        break;
+      }
+    }
+    if (currentSchedule.length > 0) {
+      const numSubjects = currentSubjectsSet.size;
+      const totalUnits = currentSchedule.reduce((sum, c) => sum + (parseFloat(c.creditedUnits || c.units) || 0), 0);
+      const timePrefScore = scoreScheduleByTimePreference(currentSchedule, preferredTimeOfDayOrder);
+      if (
+        numSubjects > bestOverallSubjectsCount ||
+        (numSubjects === bestOverallSubjectsCount && totalUnits > bestOverallUnits) ||
+        (numSubjects === bestOverallSubjectsCount && totalUnits === bestOverallUnits && timePrefScore < bestOverallTimePref)
+      ) {
+        bestOverallSchedule = [...currentSchedule];
+        bestOverallSubjectsCount = numSubjects;
+        bestOverallUnits = totalUnits;
+        bestOverallTimePref = timePrefScore;
+      }
+    }
+  }
+  return bestOverallSchedule;
+}
+
 function generateBestPartialSchedule(courses, maxUnits, maxGapHours, preferredTimeOfDayOrder) {
-  // For small lists, use powerset
-  if (courses.length <= 15) {
+  if (!courses || courses.length === 0) return [];
+  if (courses.length <= SMALL_N_THRESHOLD_PARTIAL) {
     let best = [];
     let bestSubjects = 0;
     let bestUnits = 0;
@@ -313,6 +411,8 @@ function generateBestPartialSchedule(courses, maxUnits, maxGapHours, preferredTi
     const allSubsets = getAllSubsets(courses);
     for (const subset of allSubsets) {
       if (subset.length === 0) continue;
+      const subjects = subset.map(c => c.subject);
+      if (new Set(subjects).size !== subjects.length) continue;
       if (!isScheduleConflictFree(subset, parseSchedule, checkTimeOverlap)) continue;
       if (exceedsMaxUnits(subset, maxUnits)) continue;
       if (exceedsMaxGap(subset, maxGapHours)) continue;
@@ -324,7 +424,7 @@ function generateBestPartialSchedule(courses, maxUnits, maxGapHours, preferredTi
         (uniqueSubjects === bestSubjects && totalUnits > bestUnits) ||
         (uniqueSubjects === bestSubjects && totalUnits === bestUnits && timePrefScore < bestTimePref)
       ) {
-        best = subset;
+        best = [...subset];
         bestSubjects = uniqueSubjects;
         bestUnits = totalUnits;
         bestTimePref = timePrefScore;
@@ -332,48 +432,12 @@ function generateBestPartialSchedule(courses, maxUnits, maxGapHours, preferredTi
     }
     return best;
   } else {
-    // Greedy: add courses by subject, highest units first, if they fit
-    const bySubject = {};
-    for (const c of courses) {
-      if (!bySubject[c.subject]) bySubject[c.subject] = [];
-      bySubject[c.subject].push(c);
-    }
-    const subjects = Object.keys(bySubject);
-    let best = [];
-    let bestSubjects = 0;
-    let bestUnits = 0;
-    let bestTimePref = Infinity;
-    // Try all subject orderings (limited to 1000 random shuffles for performance)
-    for (let attempt = 0; attempt < 1000; attempt++) {
-      const shuffledSubjects = [...subjects].sort(() => Math.random() - 0.5);
-      let current = [];
-      for (const subj of shuffledSubjects) {
-        const candidates = bySubject[subj].sort((a, b) => (parseFloat(b.creditedUnits || b.units) || 0) - (parseFloat(a.creditedUnits || a.units) || 0));
-        for (const c of candidates) {
-          const test = [...current, c];
-          if (!isScheduleConflictFree(test, parseSchedule, checkTimeOverlap)) continue;
-          if (exceedsMaxUnits(test, maxUnits)) continue;
-          if (exceedsMaxGap(test, maxGapHours)) continue;
-          current.push(c);
-          break;
-        }
-        // If none fit, skip this subject
-      }
-      const uniqueSubjects = new Set(current.map(c => c.subject)).size;
-      const totalUnits = current.reduce((sum, c) => sum + (parseFloat(c.creditedUnits || c.units) || 0), 0);
-      const timePrefScore = scoreScheduleByTimePreference(current, preferredTimeOfDayOrder);
-      if (
-        uniqueSubjects > bestSubjects ||
-        (uniqueSubjects === bestSubjects && totalUnits > bestUnits) ||
-        (uniqueSubjects === bestSubjects && totalUnits === bestUnits && timePrefScore < bestTimePref)
-      ) {
-        best = current;
-        bestSubjects = uniqueSubjects;
-        bestUnits = totalUnits;
-        bestTimePref = timePrefScore;
-      }
-    }
-    return best;
+    return generateBestPartialSchedule_Heuristic(
+      courses,
+      maxUnits,
+      maxGapHours,
+      preferredTimeOfDayOrder
+    );
   }
 }
 
@@ -408,8 +472,8 @@ function App() {
   const [generatedScheduleCount, setGeneratedScheduleCount] = useState(0);
   const triedScheduleCombinations = useRef(new Set()).current;
   const [scheduleSearchMode, setScheduleSearchMode] = useState(() => {
-    const saved = loadFromLocalStorage(LOCAL_STORAGE_KEYS.SCHEDULE_SEARCH_MODE, 'exhaustive');
-    return ALLOWED_SEARCH_MODES.includes(saved) ? saved : 'exhaustive';
+    const saved = loadFromLocalStorage(LOCAL_STORAGE_KEYS.SCHEDULE_SEARCH_MODE, 'partial');
+    return ALLOWED_SEARCH_MODES.includes(saved) ? saved : 'partial';
   });
 
   useEffect(() => { localStorage.setItem(LOCAL_STORAGE_KEYS.COURSES, JSON.stringify(allCourses)); }, [allCourses]);
@@ -805,7 +869,6 @@ function App() {
     }
 
     if (scheduleSearchMode === 'partial') {
-      // Use all unlocked courses
       const bestPartial = generateBestPartialSchedule(filteredCourses, maxUnits, maxClassGapHours, preferredTimeOfDayOrder);
       if (bestPartial.length > 0) {
         const uniqueCourseKey = (course) => `${course.id}-${course.subject}-${course.section}`;
@@ -1046,8 +1109,51 @@ function App() {
 
         <div className="section-container user-preferences-section">
           <h2>User Preferences</h2>
+          <div className="preference-item" style={{ marginBottom: '1.5rem' }}>
+            <label htmlFor="searchModeSelect" className="filter-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5em' }}>
+              Schedule Search Mode
+              <Tooltip
+                title={
+                  <span style={{ whiteSpace: 'pre-line' }}>
+                    {'Schedule Search Modes:\n'}
+                    {'- Recommended (Flexible, Best Fit): Maximizes the number of subjects and units in your schedule, even if not all subjects fit. Best for most users.\n'}
+                    {'- Full Coverage (All Subjects, Strict): Only generates a schedule if all subjects can fit within your constraints. Use if you must take every subject.\n'}
+                    {'- Quick (Fast, May Miss Best): Finds a schedule quickly, but may not be the best possible combination.'}
+                  </span>
+                }
+                arrow
+                placement="right"
+              >
+                <InfoOutlinedIcon style={{ color: '#1976d2', cursor: 'pointer', fontSize: 20 }} />
+              </Tooltip>
+            </label>
+            <select
+              id="searchModeSelect"
+              value={scheduleSearchMode}
+              onChange={e => setScheduleSearchMode(e.target.value)}
+              className="preference-select"
+            >
+              <option value="partial">Recommended (Flexible, Best Fit)</option>
+              <option value="exhaustive">Full Coverage (All Subjects, Strict)</option>
+              <option value="fast">Quick (Fast, May Miss Best)</option>
+            </select>
+          </div>
           <div className="preference-item">
-            <label htmlFor="maxUnitsInput" className="filter-label">Maximum Units:</label>
+            <label htmlFor="maxUnitsInput" className="filter-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5em' }}>
+              Maximum Units
+              <Tooltip
+                title={
+                  <span style={{ whiteSpace: 'pre-line' }}>
+                    {'Set the maximum total number of units you want in your schedule.\n'}
+                    {'Leave blank for no limit.'}
+                  </span>
+                }
+                arrow
+                placement="right"
+              >
+                <InfoOutlinedIcon style={{ color: '#1976d2', cursor: 'pointer', fontSize: 20 }} />
+              </Tooltip>
+            </label>
             <input
               type="number"
               id="maxUnitsInput"
@@ -1059,21 +1165,49 @@ function App() {
             />
           </div>
           <div className="preference-item">
-            <label htmlFor="maxGapInput" className="filter-label">Max Gap Between Classes (hours):</label>
+            <label htmlFor="maxGapInput" className="filter-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5em' }}>
+              Maximum Break Between Classes
+              <Tooltip
+                title={
+                  <span style={{ whiteSpace: 'pre-line' }}>
+                    {'Enter the maximum break (gap) allowed between classes.\n'}
+                    {'For example: '}<b>0</b>{' = No break (back-to-back), '}<b>0.5</b>{' = 30 minutes, '}<b>1</b>{' = 1 hour, '}<b>1.5</b>{' = 1 hour 30 minutes, '}<b>2</b>{' = 2 hours.'}
+                  </span>
+                }
+                arrow
+                placement="right"
+              >
+                <InfoOutlinedIcon style={{ color: '#1976d2', cursor: 'pointer', fontSize: 20 }} />
+              </Tooltip>
+            </label>
             <input
               type="number"
               id="maxGapInput"
               value={maxClassGapHours}
               onChange={handleMaxClassGapHoursChange}
-              placeholder="e.g., 1 (0.5, 1, 1.5, ...)"
+              placeholder="e.g., 1 hour, 0.5 for 30 min, 2 for 2 hours"
               min="0"
               step="0.5"
               className="preference-input"
             />
-            <small className="input-description">Enter desired max gap in hours (e.g., 0.5, 1, 1.5, ...). 0 means back-to-back. Leave blank for no preference.</small>
           </div>
           <div className="preference-item">
-            <label className="filter-label">Preferred Time of Day (Order):</label>
+            <label className="filter-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5em' }}>
+              Preferred Time of Day (Order)
+              <Tooltip
+                title={
+                  <span style={{ whiteSpace: 'pre-line' }}>
+                    {'Drag to reorder your preferred times of day.\n'}
+                    {'The scheduler will try to prioritize classes in your top choices.\n'}
+                    {'For example, if "Morning" is first, it will try to schedule more morning classes.'}
+                  </span>
+                }
+                arrow
+                placement="right"
+              >
+                <InfoOutlinedIcon style={{ color: '#1976d2', cursor: 'pointer', fontSize: 20 }} />
+              </Tooltip>
+            </label>
             <div className="preferred-time-order-container">
               <div className="preferred-time-order-note">Drag to reorder your preferred times of day.</div>
               <ul className="preferred-time-order-list">
@@ -1119,22 +1253,6 @@ function App() {
                 <button type="button" className="preferred-time-reset" onClick={handleResetTimePrefs}>Reset</button>
               </div>
             </div>
-          </div>
-          <div className="preference-item">
-            <label htmlFor="searchModeSelect" className="filter-label">Schedule Search Mode:</label>
-            <select
-              id="searchModeSelect"
-              value={scheduleSearchMode}
-              onChange={e => setScheduleSearchMode(e.target.value)}
-              className="preference-select"
-            >
-              <option value="fast">Fast (Not Always Optimal)</option>
-              <option value="exhaustive">Exhaustive (Always Optimal, Slower)</option>
-              <option value="partial">Best Partial (Maximize Subjects/Units)</option>
-            </select>
-            <small className="input-description">
-              Fast: Finds a good schedule quickly. Exhaustive: Finds the best possible schedule, but may be slow for large course lists.
-            </small>
           </div>
         </div>
 
