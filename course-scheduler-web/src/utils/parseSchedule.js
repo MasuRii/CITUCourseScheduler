@@ -224,14 +224,40 @@ function parseSchedulePart(schedulePartStr) {
     // One-to-one mapping: F -> Time1, SAT -> Time2
     for (let i = 0; i < nDaySegments; i++) {
       if (parsedDaySegments[i].length > 0 && parsedTimeSegments[i]) {
-        // Use corresponding room if available, otherwise use the first room or empty string
         const roomForDaySegment = i < nRooms ? roomsArray[i] : (nRooms > 0 ? roomsArray[0] : "");
-        
         resultingTimeSlots.push({
           days: parsedDaySegments[i],
           startTime: parsedTimeSegments[i].startTime,
           endTime: parsedTimeSegments[i].endTime,
           room: roomForDaySegment
+        });
+      }
+    }
+  } else if (nDaySegments > nTimeSegments && nTimeSegments > 0) {
+    // More days than times: assign first time to first day, last time to all remaining days
+    for (let i = 0; i < nDaySegments; i++) {
+      const timeIdx = i < nTimeSegments ? i : nTimeSegments - 1;
+      if (parsedDaySegments[i].length > 0 && parsedTimeSegments[timeIdx]) {
+        const roomForDaySegment = i < nRooms ? roomsArray[i] : (nRooms > 0 ? roomsArray[0] : "");
+        resultingTimeSlots.push({
+          days: parsedDaySegments[i],
+          startTime: parsedTimeSegments[timeIdx].startTime,
+          endTime: parsedTimeSegments[timeIdx].endTime,
+          room: roomForDaySegment
+        });
+      }
+    }
+  } else if (nTimeSegments > nDaySegments && nDaySegments > 0) {
+    // More times than days: assign first day to first time, last day to all remaining times
+    for (let i = 0; i < nTimeSegments; i++) {
+      const dayIdx = i < nDaySegments ? i : nDaySegments - 1;
+      if (parsedDaySegments[dayIdx].length > 0 && parsedTimeSegments[i]) {
+        const roomForTimeSegment = i < nRooms ? roomsArray[i] : (nRooms > 0 ? roomsArray[0] : "");
+        resultingTimeSlots.push({
+          days: parsedDaySegments[dayIdx],
+          startTime: parsedTimeSegments[i].startTime,
+          endTime: parsedTimeSegments[i].endTime,
+          room: roomForTimeSegment
         });
       }
     }
@@ -242,7 +268,6 @@ function parseSchedulePart(schedulePartStr) {
       parsedTimeSegments.forEach((timeSlot, index) => {
         if (timeSlot) {
           const roomForTimeSlot = index < nRooms ? roomsArray[index] : (nRooms > 0 ? roomsArray[0] : "");
-          
           resultingTimeSlots.push({
             days: days,
             startTime: timeSlot.startTime,
@@ -259,7 +284,6 @@ function parseSchedulePart(schedulePartStr) {
       parsedDaySegments.forEach((daysArray, index) => {
         if (daysArray.length > 0) {
           const roomForDayGroup = index < nRooms ? roomsArray[index] : (nRooms > 0 ? roomsArray[0] : "");
-          
           resultingTimeSlots.push({
             days: daysArray,
             startTime: timeSlot.startTime,
@@ -277,7 +301,6 @@ function parseSchedulePart(schedulePartStr) {
     for (let i = 0; i < minLen; i++) {
       if (parsedDaySegments[i].length > 0 && parsedTimeSegments[i]) {
         const roomForSegment = i < nRooms ? roomsArray[i] : (nRooms > 0 ? roomsArray[0] : "");
-        
         resultingTimeSlots.push({
           days: parsedDaySegments[i],
           startTime: parsedTimeSegments[i].startTime,
