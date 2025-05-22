@@ -744,12 +744,13 @@ function App() {
     }
 
     if (conflictingCourses.length > 0) {
-      console.log('Conflicting courses:', conflictingCourses);
-      const courseNames = conflictingCourses.map(c => `${c.subject} ${c.section}`).join(', ');
+      const attemptedCourseDetails = `${courseBeforeToggle.subject} ${courseBeforeToggle.section} (${courseBeforeToggle.schedule})`;
+      const conflictingDetails = conflictingCourses.map(c => `${c.subject} ${c.section} (${c.schedule})`).join('; ');
+      toast.error(`Lock failed: Attempted to lock ${attemptedCourseDetails}, but it conflicts with: ${conflictingDetails}`);
       setConfirmDialog({
         open: true,
         title: 'Schedule Conflict',
-        message: `This course conflicts with ${conflictingCourses.length} locked course(s): ${courseNames}. Do you still want to lock it?`,
+        message: `You attempted to lock ${attemptedCourseDetails}, but it conflicts with the following locked course(s):\n${conflictingDetails}.\nDo you still want to lock it?`,
         confirmText: 'Lock Anyway',
         cancelText: 'Cancel',
         onConfirm: () => {
@@ -1216,7 +1217,7 @@ function App() {
               </div>
 
               {showTimetable && (
-                <TimetableView lockedCourses={lockedCourses} />
+                <TimetableView lockedCourses={lockedCourses} conflictingLockedCourseIds={conflictingLockedCourseIds} />
               )}
 
               {!showTimetable && lockedCoursesCount > 0 && (

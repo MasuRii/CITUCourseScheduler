@@ -31,8 +31,9 @@ const formatTo12Hour = (timeStr) => {
  * 
  * @param {Object} props Component props
  * @param {Array} props.lockedCourses Array of locked course objects
+ * @param {Set} props.conflictingLockedCourseIds Set of conflicting locked course IDs
  */
-function TimetableView({ lockedCourses }) {
+function TimetableView({ lockedCourses, conflictingLockedCourseIds = new Set() }) {
     if (!lockedCourses || lockedCourses.length === 0) {
         return <div className="timetable-empty">No locked courses to display in timetable.</div>;
     }
@@ -97,18 +98,25 @@ function TimetableView({ lockedCourses }) {
             return <div className="timetable-course-continuation"></div>;
         }
 
-        return startCourses.map((course, index) => (
-            <div
-                key={`${course.id}-${course.slotStartTime}-${index}`}
-                className="timetable-course"
-                tabIndex={0}
-                aria-label={`Locked course: ${course.subject} section ${course.section} in room ${course.slotRoom}, from ${course.slotStartTime} to ${course.slotEndTime}`}
-            >
-                <div className="timetable-course-subject">{course.subject}</div>
-                <div className="timetable-course-section">{course.section}</div>
-                <div className="timetable-course-room">{course.slotRoom}</div>
-            </div>
-        ));
+        return startCourses.map((course, index) => {
+            const isConflicting = conflictingLockedCourseIds.has(course.id);
+            return (
+                <div
+                    key={`${course.id}-${course.slotStartTime}-${index}`}
+                    className={`timetable-course${isConflicting ? ' conflict-highlight' : ''}`}
+                    tabIndex={0}
+                    aria-label={`Locked course: ${course.subject} section ${course.section} in room ${course.slotRoom}, from ${course.slotStartTime} to ${course.slotEndTime}${isConflicting ? ' (conflict)' : ''}`}
+                    style={isConflicting ? { borderLeft: '4px solid #a5283a', background: '#a5283a22' } : {}}
+                >
+                    <div className="timetable-course-subject">{course.subject}</div>
+                    <div className="timetable-course-section">{course.section}</div>
+                    <div className="timetable-course-room">{course.slotRoom}</div>
+                    {isConflicting && (
+                        <span title="Schedule conflict with another locked course" aria-label="Schedule conflict" style={{ color: '#a5283a', marginLeft: 4, fontSize: 16, verticalAlign: 'middle' }}>⚠️</span>
+                    )}
+                </div>
+            );
+        });
     };
 
     return (
