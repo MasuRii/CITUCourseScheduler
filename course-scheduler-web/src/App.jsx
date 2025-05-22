@@ -1200,27 +1200,6 @@ function App() {
               </button>
             )}
           </div>
-
-          <div className="status-filter-controls">
-            <button
-              className={`status-filter-button ${selectedStatusFilter === 'all' ? 'selected' : ''}`}
-              onClick={() => handleStatusFilterChange('all')}
-            >
-              All Courses
-            </button>
-            <button
-              className={`status-filter-button ${selectedStatusFilter === 'open' ? 'selected' : ''}`}
-              onClick={() => handleStatusFilterChange('open')}
-            >
-              Open Only
-            </button>
-            <button
-              className={`status-filter-button ${selectedStatusFilter === 'closed' ? 'selected' : ''}`}
-              onClick={() => handleStatusFilterChange('closed')}
-            >
-              Closed Only
-            </button>
-          </div>
         </div>
 
         {lockedCoursesCount > 0 && (
@@ -1453,6 +1432,32 @@ function App() {
                 <option value="subject">Subject</option>
                 <option value="offeringDept">Department</option>
               </select>
+            </div>
+            <div className="status-filter-controls" style={{ marginLeft: 16 }}>
+              <span style={{ fontSize: '0.95em', color: '#888', marginRight: 8 }}>
+                Filter:
+              </span>
+              <button
+                className={`status-filter-button ${selectedStatusFilter === 'all' ? 'selected' : ''}`}
+                onClick={() => handleStatusFilterChange('all')}
+              >
+                All Courses
+              </button>
+              <button
+                className={`status-filter-button ${selectedStatusFilter === 'open' ? 'selected' : ''}`}
+                onClick={() => handleStatusFilterChange('open')}
+              >
+                Open Only
+              </button>
+              <button
+                className={`status-filter-button ${selectedStatusFilter === 'closed' ? 'selected' : ''}`}
+                onClick={() => handleStatusFilterChange('closed')}
+              >
+                Closed Only
+              </button>
+              <Tooltip title="This filter affects the courses shown below and those available for schedule generation." arrow placement="top">
+                <InfoOutlinedIcon style={{ color: '#1976d2', marginLeft: 6, fontSize: 18, verticalAlign: 'middle', cursor: 'pointer' }} />
+              </Tooltip>
             </div>
             {totalUnits > 0 && (
               <div className="total-units-display">
