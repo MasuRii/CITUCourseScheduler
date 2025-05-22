@@ -491,6 +491,10 @@ function App() {
     cancelText: 'Cancel',
   });
 
+  const [generatedSchedules, setGeneratedSchedules] = useState([]);
+  const [currentScheduleIndex, setCurrentScheduleIndex] = useState(0);
+  const [isGenerating, setIsGenerating] = useState(false);
+
   const handleClearAllLocks = () => {
     setConfirmDialog({
       open: true,
@@ -843,234 +847,312 @@ function App() {
     setShowTimetable(prev => !prev);
   };
 
-  /**
-   * Generates an optimized schedule based on available courses and user filters
-   */
-  const generateBestSchedule = () => {
-    const unlockedCourses = allCourses.map(c => ({ ...c, isLocked: false }));
+  const applyScheduleByIndex = (index) => {
+    if (!generatedSchedules[index]) return;
+    const scheduleIds = new Set(generatedSchedules[index]);
+    setAllCourses(prev => prev.map(course => ({
+      ...course,
+      isLocked: scheduleIds.has(`${course.id}-${course.subject}-${course.section}`)
+    })));
+    setCurrentScheduleIndex(index);
+  };
 
-    const filteredCourses = unlockedCourses.filter(course => {
-      if (selectedStatusFilter === 'open' && course.isClosed === true) return false;
-      if (selectedStatusFilter === 'closed' && course.isClosed === false) return false;
+  const handleNextSchedule = () => {
+    if (generatedSchedules.length === 0) return;
+    const nextIndex = (currentScheduleIndex + 1) % generatedSchedules.length;
+    applyScheduleByIndex(nextIndex);
+  };
 
-      if (selectedSectionTypes.length > 0) {
-        const courseSectionType = getSectionTypeSuffix(course.section);
-        if (!courseSectionType || !selectedSectionTypes.includes(courseSectionType)) return false;
-      }
-
-      const parsedScheduleResult = parseSchedule(course.schedule);
-      if (!parsedScheduleResult || parsedScheduleResult.isTBA || !parsedScheduleResult.allTimeSlots || parsedScheduleResult.allTimeSlots.length === 0) {
-        return true;
-      }
-
-      const anySlotIsExcluded = parsedScheduleResult.allTimeSlots.some(slot => {
-        const slotIsOnExcludedDay = slot.days.some(day => excludedDays.includes(day));
-        if (slotIsOnExcludedDay) return true;
-
-        const slotOverlapsAnExcludedTimeRange = excludedTimeRanges.some(excludedRange => {
-          if (excludedRange.start && excludedRange.end && slot.startTime && slot.endTime) {
-            return checkTimeOverlap(slot.startTime, slot.endTime, excludedRange.start, excludedRange.end);
-          }
-          return false;
-        });
-        if (slotOverlapsAnExcludedTimeRange) return true;
-        return false;
-      });
-
-      if (anySlotIsExcluded) {
-        return false;
-      }
-
-      return true;
-    });
-
-    const coursesBySubject = filteredCourses.reduce((acc, course) => {
-      if (!acc[course.subject]) {
-        acc[course.subject] = [];
-      }
-      acc[course.subject].push(course);
-      return acc;
-    }, {});
-
-    if (scheduleSearchMode === 'exhaustive' && Object.keys(coursesBySubject).length > 12) {
-      toast.info('Warning: Exhaustive search may be very slow for more than 12 subjects. Consider using Fast mode.');
-    }
-
-    if (scheduleSearchMode === 'exhaustive') {
-      const { bestSchedule, bestScore } = generateExhaustiveBestSchedule(coursesBySubject, preferredTimeOfDayOrder, maxUnits, maxClassGapHours);
-      if (bestSchedule.length > 0) {
-        const isActuallyConflictFree = isScheduleConflictFree(bestSchedule, parseSchedule, checkTimeOverlap);
-        if (!isActuallyConflictFree) {
-          toast.error("The best schedule found still had conflicts. Please try again or adjust filters. No schedule applied.");
-          return;
-        }
-        const uniqueCourseKey = (course) => `${course.id}-${course.subject}-${course.section}`;
-        const bestScheduleKeys = new Set(bestSchedule.map(uniqueCourseKey));
-        setAllCourses(prev => prev.map(course => ({
-          ...course,
-          isLocked: bestScheduleKeys.has(uniqueCourseKey(course))
-        })));
-        setGeneratedScheduleCount(prev => prev + 1);
-        toast.success(`Generated optimal schedule #${generatedScheduleCount + 1} with ${bestSchedule.length} courses (${bestScore - bestSchedule.length * 100} units)`);
-      } else {
-        toast.error("Couldn't generate a valid schedule with current filters (exhaustive mode)");
-      }
-      return;
-    }
-
-    if (scheduleSearchMode === 'partial') {
-      const bestPartial = generateBestPartialSchedule(filteredCourses, maxUnits, maxClassGapHours, preferredTimeOfDayOrder);
-      if (bestPartial.length > 0) {
-        const uniqueCourseKey = (course) => `${course.id}-${course.subject}-${course.section}`;
-        const bestScheduleKeys = new Set(bestPartial.map(uniqueCourseKey));
-        setAllCourses(prev => prev.map(course => ({
-          ...course,
-          isLocked: bestScheduleKeys.has(uniqueCourseKey(course))
-        })));
-        setGeneratedScheduleCount(prev => prev + 1);
-        toast.success(`Generated best partial schedule with ${bestPartial.length} courses (${bestPartial.reduce((sum, c) => sum + (parseFloat(c.creditedUnits || c.units) || 0), 0)} units, ${new Set(bestPartial.map(c => c.subject)).size} subjects)`);
-      } else {
-        toast.error("Couldn't generate a valid partial schedule with current filters");
-      }
-      return;
-    }
-
-    const generateCombinationKey = (courses) => {
-      return courses.map(c => c.id).sort().join(',');
-    };
-
-    let bestSchedule = [];
-    let bestScore = -1;
-    let bestTimePrefScore = Infinity;
-    let maxAttempts = 1000;
-    let attempts = 0;
-
-    while (attempts < maxAttempts) {
-      attempts++;
-
-      let currentSchedule = [];
-
-      Object.values(coursesBySubject).forEach(subjectCourses => {
-        const shuffledCourses = [...subjectCourses].sort(() => Math.random() - 0.5);
-
-        for (const course of shuffledCourses) {
-          const courseScheduleResult = parseSchedule(course.schedule);
-          if (!courseScheduleResult || courseScheduleResult.isTBA || !courseScheduleResult.allTimeSlots || courseScheduleResult.allTimeSlots.length === 0) {
-            currentSchedule.push(course);
-            break;
-          }
-
-          let hasConflictWithCurrentSelection = false;
-          for (const existingCourse of currentSchedule) {
-            const existingScheduleResult = parseSchedule(existingCourse.schedule);
-            if (!existingScheduleResult || existingScheduleResult.isTBA || !existingScheduleResult.allTimeSlots || existingScheduleResult.allTimeSlots.length === 0) {
-              continue;
-            }
-
-            for (const newSlot of courseScheduleResult.allTimeSlots) {
-              for (const existingSlot of existingScheduleResult.allTimeSlots) {
-                const commonDays = newSlot.days.filter(day => existingSlot.days.includes(day));
-                if (commonDays.length > 0) {
-                  if (newSlot.startTime && newSlot.endTime && existingSlot.startTime && existingSlot.endTime) {
-                    if (checkTimeOverlap(newSlot.startTime, newSlot.endTime, existingSlot.startTime, existingSlot.endTime)) {
-                      hasConflictWithCurrentSelection = true;
-                      break;
-                    }
-                  }
-                }
-              }
-              if (hasConflictWithCurrentSelection) break;
-            }
-
-            if (hasConflictWithCurrentSelection) break;
-          }
-
-          if (!hasConflictWithCurrentSelection) {
-            currentSchedule.push(course);
-            break;
-          }
-        }
-      });
-
-      if (!isScheduleConflictFree(currentSchedule, parseSchedule, checkTimeOverlap)) {
-        continue;
-      }
-
-      if (exceedsMaxUnits(currentSchedule, maxUnits)) {
-        continue;
-      }
-
-      if (exceedsMaxGap(currentSchedule, maxClassGapHours)) {
-        continue;
-      }
-
-      const scheduleKey = generateCombinationKey(currentSchedule);
-
-      if (triedScheduleCombinations.has(scheduleKey)) {
-        continue;
-      }
-
-      triedScheduleCombinations.add(scheduleKey);
-
-      const totalCourses = currentSchedule.length;
-      const totalUnits = currentSchedule.reduce((sum, course) => {
-        const units = parseFloat(course.creditedUnits || course.units);
-        return isNaN(units) ? sum : sum + units;
-      }, 0);
-
-      const score = totalCourses * 100 + totalUnits;
-      const timePrefScore = scoreScheduleByTimePreference(currentSchedule, preferredTimeOfDayOrder);
-
-      if (
-        score > bestScore ||
-        (score === bestScore && timePrefScore < bestTimePrefScore)
-      ) {
-        bestScore = score;
-        bestTimePrefScore = timePrefScore;
-        bestSchedule = currentSchedule;
-      }
-
-      if (bestSchedule.length === Object.keys(coursesBySubject).length) {
-        break;
-      }
-    }
-
-    if (bestSchedule.length > 0) {
-      const isActuallyConflictFree = isScheduleConflictFree(bestSchedule, parseSchedule, checkTimeOverlap);
-      console.log(
-        '[generateBestSchedule] Final bestSchedule (length:', bestSchedule.length, ') before applying. Is conflict-free according to isScheduleConflictFree():', isActuallyConflictFree,
-        'Courses:', bestSchedule.map(c => ({ id: c.id, subject: c.subject, section: c.section, schedule: c.schedule }))
-      );
-
-      if (!isActuallyConflictFree) {
-        toast.error("The best schedule found still had conflicts. Please try again or adjust filters. No schedule applied.");
-        console.error(
-          "[generateBestSchedule] CRITICAL SAFEGUARD: Conflict found in final bestSchedule despite earlier checks. Aborting application.",
-          bestSchedule.map(c => ({ id: c.id, subject: c.subject, section: c.section, schedule: c.schedule }))
-        );
-        return;
-      }
-
-      const uniqueCourseKey = (course) => `${course.id}-${course.subject}-${course.section}`;
-      const bestScheduleKeys = new Set(bestSchedule.map(uniqueCourseKey));
-
-      setAllCourses(prev => prev.map(course => ({
-        ...course,
-        isLocked: bestScheduleKeys.has(uniqueCourseKey(course))
-      })));
-
-      setGeneratedScheduleCount(prev => prev + 1);
-      toast.success(`Generated schedule #${generatedScheduleCount + 1} with ${bestSchedule.length} courses (${bestScore - bestSchedule.length * 100} units)`);
-    } else {
-      toast.error("Couldn't generate a valid schedule with current filters");
-    }
+  const handlePrevSchedule = () => {
+    if (generatedSchedules.length === 0) return;
+    const prevIndex = (currentScheduleIndex - 1 + generatedSchedules.length) % generatedSchedules.length;
+    applyScheduleByIndex(prevIndex);
   };
 
   const handleClearGeneratedSchedules = () => {
     triedScheduleCombinations.clear();
     setGeneratedScheduleCount(0);
+    setGeneratedSchedules([]);
+    setCurrentScheduleIndex(0);
     handleClearAllLocks();
   };
+
+  /**
+   * Generates an optimized schedule based on available courses and user filters
+   */
+  const generateBestSchedule = async () => {
+    if (isGenerating) return;
+    setIsGenerating(true);
+    await new Promise(resolve => setTimeout(resolve, 0));
+    try {
+      const unlockedCourses = allCourses.map(c => ({ ...c, isLocked: false }));
+
+      const filteredCourses = unlockedCourses.filter(course => {
+        if (selectedStatusFilter === 'open' && course.isClosed === true) return false;
+        if (selectedStatusFilter === 'closed' && course.isClosed === false) return false;
+
+        if (selectedSectionTypes.length > 0) {
+          const courseSectionType = getSectionTypeSuffix(course.section);
+          if (!courseSectionType || !selectedSectionTypes.includes(courseSectionType)) return false;
+        }
+
+        const parsedScheduleResult = parseSchedule(course.schedule);
+        if (!parsedScheduleResult || parsedScheduleResult.isTBA || !parsedScheduleResult.allTimeSlots || parsedScheduleResult.allTimeSlots.length === 0) {
+          return true;
+        }
+
+        const anySlotIsExcluded = parsedScheduleResult.allTimeSlots.some(slot => {
+          const slotIsOnExcludedDay = slot.days.some(day => excludedDays.includes(day));
+          if (slotIsOnExcludedDay) return true;
+
+          const slotOverlapsAnExcludedTimeRange = excludedTimeRanges.some(excludedRange => {
+            if (excludedRange.start && excludedRange.end && slot.startTime && slot.endTime) {
+              return checkTimeOverlap(slot.startTime, slot.endTime, excludedRange.start, excludedRange.end);
+            }
+            return false;
+          });
+          if (slotOverlapsAnExcludedTimeRange) return true;
+          return false;
+        });
+
+        if (anySlotIsExcluded) {
+          return false;
+        }
+
+        return true;
+      });
+
+      const coursesBySubject = filteredCourses.reduce((acc, course) => {
+        if (!acc[course.subject]) {
+          acc[course.subject] = [];
+        }
+        acc[course.subject].push(course);
+        return acc;
+      }, {});
+
+      if (scheduleSearchMode === 'exhaustive' && Object.keys(coursesBySubject).length > 12) {
+        toast.info('Warning: Exhaustive search may be very slow for more than 12 subjects. Consider using Fast mode.');
+      }
+
+      if (scheduleSearchMode === 'exhaustive') {
+        const { bestSchedule, bestScore } = generateExhaustiveBestSchedule(coursesBySubject, preferredTimeOfDayOrder, maxUnits, maxClassGapHours);
+        if (bestSchedule.length > 0) {
+          const isActuallyConflictFree = isScheduleConflictFree(bestSchedule, parseSchedule, checkTimeOverlap);
+          if (!isActuallyConflictFree) {
+            toast.error("The best schedule found still had conflicts. Please try again or adjust filters. No schedule applied.");
+            return;
+          }
+          const uniqueCourseKey = (course) => `${course.id}-${course.subject}-${course.section}`;
+          const bestScheduleKeys = new Set(bestSchedule.map(uniqueCourseKey));
+          setAllCourses(prev => prev.map(course => ({
+            ...course,
+            isLocked: bestScheduleKeys.has(uniqueCourseKey(course))
+          })));
+          setGeneratedScheduleCount(prev => prev + 1);
+          let newScheduleIndex = currentScheduleIndex;
+          setGeneratedSchedules(prev => {
+            const newSchedule = bestSchedule.map(uniqueCourseKey);
+            const exists = prev.some(sched => sched.length === newSchedule.length && sched.every((id, i) => id === newSchedule[i]));
+            if (!exists) {
+              newScheduleIndex = prev.length;
+              return [...prev, newSchedule];
+            } else {
+              newScheduleIndex = prev.findIndex(sched => sched.length === newSchedule.length && sched.every((id, i) => id === newSchedule[i]));
+              return prev;
+            }
+          });
+          setCurrentScheduleIndex(newScheduleIndex);
+          toast.success(`Generated schedule #${generatedScheduleCount + 1} with ${bestSchedule.length} courses (${bestScore - bestSchedule.length * 100} units)`);
+        } else {
+          toast.error("Couldn't generate a valid schedule with current filters");
+        }
+        return;
+      }
+
+      if (scheduleSearchMode === 'partial') {
+        const bestPartial = generateBestPartialSchedule(filteredCourses, maxUnits, maxClassGapHours, preferredTimeOfDayOrder);
+        if (bestPartial.length > 0) {
+          const uniqueCourseKey = (course) => `${course.id}-${course.subject}-${course.section}`;
+          const bestScheduleKeys = new Set(bestPartial.map(uniqueCourseKey));
+          setAllCourses(prev => prev.map(course => ({
+            ...course,
+            isLocked: bestScheduleKeys.has(uniqueCourseKey(course))
+          })));
+          setGeneratedScheduleCount(prev => prev + 1);
+          let newScheduleIndex = currentScheduleIndex;
+          setGeneratedSchedules(prev => {
+            const newSchedule = bestPartial.map(uniqueCourseKey);
+            const exists = prev.some(sched => sched.length === newSchedule.length && sched.every((id, i) => id === newSchedule[i]));
+            if (!exists) {
+              newScheduleIndex = prev.length;
+              return [...prev, newSchedule];
+            } else {
+              newScheduleIndex = prev.findIndex(sched => sched.length === newSchedule.length && sched.every((id, i) => id === newSchedule[i]));
+              return prev;
+            }
+          });
+          setCurrentScheduleIndex(newScheduleIndex);
+          toast.success(`Generated schedule #${generatedScheduleCount + 1} with ${bestPartial.length} courses (${bestPartial.reduce((sum, c) => sum + (parseFloat(c.creditedUnits || c.units) || 0), 0)} units, ${new Set(bestPartial.map(c => c.subject)).size} subjects)`);
+        } else {
+          toast.error("Couldn't generate a valid partial schedule with current filters");
+        }
+        return;
+      }
+
+      const generateCombinationKey = (courses) => {
+        return courses.map(c => c.id).sort().join(',');
+      };
+
+      let bestSchedule = [];
+      let bestScore = -1;
+      let bestTimePrefScore = Infinity;
+      let maxAttempts = 1000;
+      let attempts = 0;
+
+      while (attempts < maxAttempts) {
+        attempts++;
+
+        let currentSchedule = [];
+
+        Object.values(coursesBySubject).forEach(subjectCourses => {
+          const shuffledCourses = [...subjectCourses].sort(() => Math.random() - 0.5);
+
+          for (const course of shuffledCourses) {
+            const courseScheduleResult = parseSchedule(course.schedule);
+            if (!courseScheduleResult || courseScheduleResult.isTBA || !courseScheduleResult.allTimeSlots || courseScheduleResult.allTimeSlots.length === 0) {
+              currentSchedule.push(course);
+              break;
+            }
+
+            let hasConflictWithCurrentSelection = false;
+            for (const existingCourse of currentSchedule) {
+              const existingScheduleResult = parseSchedule(existingCourse.schedule);
+              if (!existingScheduleResult || existingScheduleResult.isTBA || !existingScheduleResult.allTimeSlots || existingScheduleResult.allTimeSlots.length === 0) {
+                continue;
+              }
+
+              for (const newSlot of courseScheduleResult.allTimeSlots) {
+                for (const existingSlot of existingScheduleResult.allTimeSlots) {
+                  const commonDays = newSlot.days.filter(day => existingSlot.days.includes(day));
+                  if (commonDays.length > 0) {
+                    if (newSlot.startTime && newSlot.endTime && existingSlot.startTime && existingSlot.endTime) {
+                      if (checkTimeOverlap(newSlot.startTime, newSlot.endTime, existingSlot.startTime, existingSlot.endTime)) {
+                        hasConflictWithCurrentSelection = true;
+                        break;
+                      }
+                    }
+                  }
+                }
+                if (hasConflictWithCurrentSelection) break;
+              }
+
+              if (hasConflictWithCurrentSelection) break;
+            }
+
+            if (!hasConflictWithCurrentSelection) {
+              currentSchedule.push(course);
+              break;
+            }
+          }
+        });
+
+        if (!isScheduleConflictFree(currentSchedule, parseSchedule, checkTimeOverlap)) {
+          continue;
+        }
+
+        if (exceedsMaxUnits(currentSchedule, maxUnits)) {
+          continue;
+        }
+
+        if (exceedsMaxGap(currentSchedule, maxClassGapHours)) {
+          continue;
+        }
+
+        const scheduleKey = generateCombinationKey(currentSchedule);
+
+        if (triedScheduleCombinations.has(scheduleKey)) {
+          continue;
+        }
+
+        triedScheduleCombinations.add(scheduleKey);
+
+        const totalCourses = currentSchedule.length;
+        const totalUnits = currentSchedule.reduce((sum, course) => {
+          const units = parseFloat(course.creditedUnits || course.units);
+          return isNaN(units) ? sum : sum + units;
+        }, 0);
+
+        const score = totalCourses * 100 + totalUnits;
+        const timePrefScore = scoreScheduleByTimePreference(currentSchedule, preferredTimeOfDayOrder);
+
+        if (
+          score > bestScore ||
+          (score === bestScore && timePrefScore < bestTimePrefScore)
+        ) {
+          bestScore = score;
+          bestTimePrefScore = timePrefScore;
+          bestSchedule = currentSchedule;
+        }
+
+        if (bestSchedule.length === Object.keys(coursesBySubject).length) {
+          break;
+        }
+      }
+
+      if (bestSchedule.length > 0) {
+        const isActuallyConflictFree = isScheduleConflictFree(bestSchedule, parseSchedule, checkTimeOverlap);
+        console.log(
+          '[generateBestSchedule] Final bestSchedule (length:', bestSchedule.length, ') before applying. Is conflict-free according to isScheduleConflictFree():', isActuallyConflictFree,
+          'Courses:', bestSchedule.map(c => ({ id: c.id, subject: c.subject, section: c.section, schedule: c.schedule }))
+        );
+
+        if (!isActuallyConflictFree) {
+          toast.error("The best schedule found still had conflicts. Please try again or adjust filters. No schedule applied.");
+          console.error(
+            "[generateBestSchedule] CRITICAL SAFEGUARD: Conflict found in final bestSchedule despite earlier checks. Aborting application.",
+            bestSchedule.map(c => ({ id: c.id, subject: c.subject, section: c.section, schedule: c.schedule }))
+          );
+          return;
+        }
+
+        const uniqueCourseKey = (course) => `${course.id}-${course.subject}-${course.section}`;
+        const bestScheduleKeys = new Set(bestSchedule.map(uniqueCourseKey));
+
+        setAllCourses(prev => prev.map(course => ({
+          ...course,
+          isLocked: bestScheduleKeys.has(uniqueCourseKey(course))
+        })));
+
+        setGeneratedScheduleCount(prev => prev + 1);
+        let newScheduleIndex = currentScheduleIndex;
+        setGeneratedSchedules(prev => {
+          const newSchedule = bestSchedule.map(uniqueCourseKey);
+          const exists = prev.some(sched => sched.length === newSchedule.length && sched.every((id, i) => id === newSchedule[i]));
+          if (!exists) {
+            newScheduleIndex = prev.length;
+            return [...prev, newSchedule];
+          } else {
+            newScheduleIndex = prev.findIndex(sched => sched.length === newSchedule.length && sched.every((id, i) => id === newSchedule[i]));
+            return prev;
+          }
+        });
+        setCurrentScheduleIndex(newScheduleIndex);
+        toast.success(`Generated schedule #${generatedScheduleCount + 1} with ${bestSchedule.length} courses (${bestScore - bestSchedule.length * 100} units)`);
+      } else {
+        toast.error("Couldn't generate a valid schedule with current filters");
+      }
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  useEffect(() => {
+    if (generatedSchedules.length === 0) {
+      setCurrentScheduleIndex(0);
+    } else if (currentScheduleIndex > generatedSchedules.length - 1) {
+      setCurrentScheduleIndex(generatedSchedules.length - 1);
+    }
+  }, [generatedSchedules, currentScheduleIndex]);
 
   return (
     <>
@@ -1100,11 +1182,19 @@ function App() {
             <button
               className="generate-schedule-button"
               onClick={generateBestSchedule}
-              disabled={allCourses.length === 0}
+              disabled={allCourses.length === 0 || isGenerating}
             >
-              {generatedScheduleCount === 0 ? 'Generate Best Schedule' : `Generate Next Best Schedule (#${generatedScheduleCount + 1})`}
+              {isGenerating ? 'Generating...' : 'Generate Schedule'}
+              {isGenerating && <span className="spinner" style={{ marginLeft: 8, display: 'inline-block', width: 16, height: 16, border: '2px solid #ccc', borderTop: '2px solid #1976d2', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />}
             </button>
-            {generatedScheduleCount > 0 && (
+            {generatedSchedules.length > 1 && (
+              <>
+                <button onClick={handlePrevSchedule} aria-label="Previous Schedule">Previous</button>
+                <span style={{ margin: '0 8px' }}>Schedule {currentScheduleIndex + 1} of {generatedSchedules.length} found</span>
+                <button onClick={handleNextSchedule} aria-label="Next Schedule">Next</button>
+              </>
+            )}
+            {generatedSchedules.length > 0 && (
               <button onClick={handleClearGeneratedSchedules}>
                 Reset Schedule Generator
               </button>
