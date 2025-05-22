@@ -98,7 +98,12 @@ function TimetableView({ lockedCourses }) {
         }
 
         return startCourses.map((course, index) => (
-            <div key={`${course.id}-${course.slotStartTime}-${index}`} className="timetable-course">
+            <div
+                key={`${course.id}-${course.slotStartTime}-${index}`}
+                className="timetable-course"
+                tabIndex={0}
+                aria-label={`Locked course: ${course.subject} section ${course.section} in room ${course.slotRoom}, from ${course.slotStartTime} to ${course.slotEndTime}`}
+            >
                 <div className="timetable-course-subject">{course.subject}</div>
                 <div className="timetable-course-section">{course.section}</div>
                 <div className="timetable-course-room">{course.slotRoom}</div>
@@ -108,42 +113,72 @@ function TimetableView({ lockedCourses }) {
 
     return (
         <div className="timetable-container">
+            <table
+                className="timetable"
+                role="table"
+                aria-label="Weekly timetable of locked courses"
+            >
+                <caption className="visually-hidden">
+                    Weekly timetable showing locked courses by day and time slot.
+                </caption>
+                <thead>
+                    <tr role="row">
+                        <th
+                            className="time-header"
+                            role="columnheader"
+                            aria-label="Time"
+                            scope="col"
+                        >
+                            Time
+                        </th>
+                        {DAYS.map((day, index) => (
+                            <th
+                                key={day}
+                                className="day-header"
+                                role="columnheader"
+                                aria-label={DAY_NAMES[index]}
+                                scope="col"
+                            >
+                                <div className="day-code">{day}</div>
+                                <div className="day-name">{DAY_NAMES[index]}</div>
+                            </th>
+                        ))}
+                    </tr>
+                </thead>
+                <tbody>
+                    {TIME_SLOTS.map((timeSlot) => (
+                        <tr key={timeSlot} className="time-row" role="row">
+                            <td
+                                className="time-cell"
+                                role="rowheader"
+                                aria-label={formatTo12Hour(timeSlot)}
+                                scope="row"
+                            >
+                                {formatTo12Hour(timeSlot)}
+                            </td>
+                            {DAYS.map(day => (
+                                <td
+                                    key={`${day}-${timeSlot}`}
+                                    className="day-cell"
+                                    role="cell"
+                                    tabIndex={0}
+                                    aria-label={`Courses on ${DAY_NAMES[DAYS.indexOf(day)]} at ${formatTo12Hour(timeSlot)}`}
+                                >
+                                    {coursesByTimeAndDay[timeSlot]?.[day]
+                                        ? renderCourseCell(coursesByTimeAndDay[timeSlot][day])
+                                        : null}
+                                </td>
+                            ))}
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
             <div className="timetable-summary">
                 <div className="timetable-totals">
                     <span><strong>Total Units:</strong> {totalUnits}</span>
                     <span><strong>Subjects:</strong> {uniqueSubjects}</span>
                     <span><strong>Courses:</strong> {lockedCourses.length}</span>
                 </div>
-            </div>
-
-            <div className="timetable-grid">
-                <table className="timetable">
-                    <thead>
-                        <tr>
-                            <th className="time-header">Time</th>
-                            {DAYS.map((day, index) => (
-                                <th key={day} className="day-header">
-                                    <div className="day-code">{day}</div>
-                                    <div className="day-name">{DAY_NAMES[index]}</div>
-                                </th>
-                            ))}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {TIME_SLOTS.map((timeSlot) => (
-                            <tr key={timeSlot} className="time-row">
-                                <td className="time-cell">{formatTo12Hour(timeSlot)}</td>
-                                {DAYS.map(day => (
-                                    <td key={`${day}-${timeSlot}`} className="day-cell">
-                                        {coursesByTimeAndDay[timeSlot]?.[day] ?
-                                            renderCourseCell(coursesByTimeAndDay[timeSlot][day]) :
-                                            null}
-                                    </td>
-                                ))}
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
             </div>
         </div>
     );
