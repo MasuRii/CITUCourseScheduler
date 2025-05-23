@@ -1396,8 +1396,7 @@ function App() {
                   <Tooltip
                     title={
                       <span style={{ whiteSpace: 'pre-line' }}>
-                        {'Enter the maximum break (gap) allowed between classes.\n'}
-                        {'For example: '}<b>0</b>{' = No break (back-to-back), '}<b>0.5</b>{' = 30 minutes, '}<b>1</b>{' = 1 hour, '}<b>1.5</b>{' = 1 hour 30 minutes, '}<b>2</b>{' = 2 hours.'}
+                        {'Sets the maximum allowed break time between consecutive classes on the same day. Options range from 0 minutes (back-to-back) up to 5 hours, in 30-minute increments.'}
                       </span>
                     }
                     arrow

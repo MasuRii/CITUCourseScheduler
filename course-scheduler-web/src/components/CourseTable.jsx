@@ -80,6 +80,9 @@ function CourseTable({ courses, groupingKey, onDeleteCourse, onToggleLockCourse,
                       className={`lock-button ${course.isLocked ? 'locked' : 'unlocked'}`}
                       title={course.isLocked ? 'Unlock Course' : 'Lock Course'}
                     >
+                      {course.isLocked && conflictingLockedCourseIds && conflictingLockedCourseIds.has(course.id) && (
+                        <span className="conflict-icon" title="Schedule conflict with another locked course" aria-label="Schedule conflict">⚠️</span>
+                      )}
                       {course.isLocked ? 'Unlock' : 'Lock'}
                     </button>
                     <button
@@ -89,9 +92,6 @@ function CourseTable({ courses, groupingKey, onDeleteCourse, onToggleLockCourse,
                     >
                       ✕
                     </button>
-                    {course.isLocked && conflictingLockedCourseIds && conflictingLockedCourseIds.has(course.id) && (
-                      <span title="Schedule conflict with another locked course" aria-label="Schedule conflict" style={{ color: '#a5283a', marginLeft: 4, fontSize: 16, verticalAlign: 'middle' }}>⚠️</span>
-                    )}
                   </td>
                 </tr>
               ))}
@@ -117,6 +117,9 @@ function CourseTable({ courses, groupingKey, onDeleteCourse, onToggleLockCourse,
                   className={`lock-button ${course.isLocked ? 'locked' : 'unlocked'}`}
                   title={course.isLocked ? 'Unlock Course' : 'Lock Course'}
                 >
+                  {course.isLocked && conflictingLockedCourseIds && conflictingLockedCourseIds.has(course.id) && (
+                    <span className="conflict-icon" title="Schedule conflict with another locked course" aria-label="Schedule conflict">⚠️</span>
+                  )}
                   {course.isLocked ? 'Unlock' : 'Lock'}
                 </button>
                 <button
@@ -126,9 +129,6 @@ function CourseTable({ courses, groupingKey, onDeleteCourse, onToggleLockCourse,
                 >
                   ✕
                 </button>
-                {course.isLocked && conflictingLockedCourseIds && conflictingLockedCourseIds.has(course.id) && (
-                  <span title="Schedule conflict with another locked course" aria-label="Schedule conflict" style={{ color: '#a5283a', marginLeft: 4, fontSize: 16, verticalAlign: 'middle' }}>⚠️</span>
-                )}
               </td>
             </tr>
           ))}

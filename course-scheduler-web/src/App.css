@@ -606,7 +606,7 @@ button:disabled:hover {
 }
 
 .lock-button {
-  min-width: 90px;
+  width: 90px;
   font-weight: var(--font-weight-medium);
   border-radius: var(--border-radius-md);
   padding: var(--space-2) var(--space-3);
@@ -633,7 +633,8 @@ button:disabled:hover {
 .lock-button.locked {
   background-color: var(--lock-button-locked-bg);
   color: var(--lock-button-locked-text);
-  border: 1px solid var(--lock-button-locked-border);
+  border-color: var(--lock-button-locked-border);
+  padding: var(--space-2) var(--space-3);
 }
 
 .lock-button.unlocked {
@@ -844,9 +845,12 @@ input[type="radio"] {
 }
 
 .course-table td.actions-cell {
+  text-align: center;
+  white-space: nowrap;
   gap: var(--space-2);
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
+  padding: var(--space-3) var(--space-4);
 }
 
 .course-table tr {
@@ -958,6 +962,16 @@ input[type="radio"] {
   border-radius: var(--border-radius-md);
   font-size: var(--font-size-sm);
   border-left: 4px solid var(--danger);
+}
+
+.conflict-icon-container {
+  width: calc(16px + var(--space-1));
+  min-width: calc(16px + var(--space-1));
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: var(--space-1);
 }
 
 .time-filter {
@@ -1476,6 +1490,21 @@ input[type="time"]:focus-visible {
   background-color: #ffe0e0 !important;
   border-left: 5px solid #e53935 !important;
   color: #b71c1c !important;
+}
+
+[data-theme='dark'] .course-table-row.locked-row.conflict-highlight {
+  background-color: #b71c1c !important;
+  border-left: 5px solid #ff5252 !important;
+}
+
+[data-theme='dark'][data-palette='comfort'] .course-table-row.locked-row.conflict-highlight {
+  background-color: #b71c1c !important;
+  border-left: 5px solid #ff5252 !important;
+  color: var(--text-color) !important;
+}
+
+.course-table-row.locked-row.conflict-highlight .delete-button {
+  color: var(--text-color);
 }
 
 .course-table-row {
@@ -2395,11 +2424,25 @@ a:focus {
 }
 
 .course-table-body tr.locked-row td.actions-cell {
-  padding-left: calc(var(--space-2) - 4px) !important;
+  box-shadow: none;
+  padding-left: calc(var(--space-4) + 4px);
+  padding-right: var(--space-4);
+  padding-top: var(--space-3);
+  padding-bottom: var(--space-3);
 }
 
 .app-controls {
   display: flex;
   gap: var(--space-4);
   align-items: center;
+}
+
+[data-theme="dark"] .grouping-controls select {
+  background-color: var(--filter-bg);
+  color: var(--text-color);
+}
+
+[data-theme="dark"][data-palette="comfort"] .grouping-controls select {
+  background-color: var(--filter-bg);
+  color: var(--text-color);
 }
