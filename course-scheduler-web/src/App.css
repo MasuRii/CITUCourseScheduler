@@ -606,7 +606,7 @@ button:disabled:hover {
 }
 
 .lock-button {
-  min-width: 90px;
+  width: 90px;
   font-weight: var(--font-weight-medium);
   border-radius: var(--border-radius-md);
   padding: var(--space-2) var(--space-3);
@@ -2407,7 +2407,15 @@ a:focus {
 }
 
 .course-table-body tr.locked-row td.actions-cell {
-  padding-left: calc(var(--space-2) - 4px) !important;
+  box-shadow: none;
+  padding-left: calc(var(--space-4) + 4px);
+  /* Adjust padding to account for the 4px border and match default left padding */
+  padding-right: var(--space-4);
+  /* Ensure right padding is consistent */
+  padding-top: var(--space-3);
+  /* Ensure top padding is consistent */
+  padding-bottom: var(--space-3);
+  /* Ensure bottom padding is consistent */
 }
 
 .app-controls {
