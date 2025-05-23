@@ -1175,7 +1175,29 @@ function App() {
         <div className="header-controls">
           <div className="app-controls">
             <button className="theme-toggle-button" onClick={handleToggleTheme}>
-              {theme === 'light' ? '🌙 Switch to Dark Mode' : '☀️ Switch to Light Mode'}
+              {theme === 'light' ? (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
+                  </svg>
+                  Switch to Dark Mode
+                </>
+              ) : (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="4"></circle>
+                    <path d="M12 2v2"></path>
+                    <path d="M12 20v2"></path>
+                    <path d="m4.93 4.93 1.41 1.41"></path>
+                    <path d="m17.66 17.66 1.41 1.41"></path>
+                    <path d="M2 12h2"></path>
+                    <path d="M20 12h2"></path>
+                    <path d="m6.34 17.66-1.41 1.41"></path>
+                    <path d="m19.07 4.93-1.41 1.41"></path>
+                  </svg>
+                  Switch to Light Mode
+                </>
+              )}
             </button>
           </div>
 
@@ -1185,19 +1207,48 @@ function App() {
               onClick={generateBestSchedule}
               disabled={allCourses.length === 0 || isGenerating}
             >
-              {isGenerating ? 'Generating...' : 'Generate Schedule'}
-              {isGenerating && <span className="spinner" style={{ marginLeft: 8, display: 'inline-block', width: 16, height: 16, border: '2px solid #ccc', borderTop: '2px solid #1976d2', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />}
+              {isGenerating ? (
+                <>
+                  Generating...
+                  <span className="spinner" style={{ marginLeft: 8, display: 'inline-block', width: 16, height: 16, border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid white', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                </>
+              ) : (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path>
+                    <path d="m9 12 2 2 4-4"></path>
+                  </svg>
+                  Generate Schedule
+                </>
+              )}
             </button>
             {generatedSchedules.length > 1 && (
               <>
-                <button onClick={handlePrevSchedule} aria-label="Previous Schedule">Previous</button>
-                <span style={{ margin: '0 8px' }}>Schedule {currentScheduleIndex + 1} of {generatedSchedules.length} found</span>
-                <button onClick={handleNextSchedule} aria-label="Next Schedule">Next</button>
+                <button onClick={handlePrevSchedule} aria-label="Previous Schedule">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="m15 18-6-6 6-6"></path>
+                  </svg>
+                  Previous
+                </button>
+                <span style={{ margin: '0 8px', display: 'flex', alignItems: 'center', padding: '0 8px', background: 'var(--accent-light)', borderRadius: 'var(--border-radius-md)', color: 'var(--accent)', fontWeight: 'var(--font-weight-medium)' }}>
+                  Schedule {currentScheduleIndex + 1} of {generatedSchedules.length}
+                </span>
+                <button onClick={handleNextSchedule} aria-label="Next Schedule">
+                  Next
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="m9 18 6-6-6-6"></path>
+                  </svg>
+                </button>
               </>
             )}
             {generatedSchedules.length > 0 && (
-              <button onClick={handleClearGeneratedSchedules}>
-                Reset Schedule Generator
+              <button onClick={handleClearGeneratedSchedules} className="danger-button">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 6h18"></path>
+                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                </svg>
+                Reset Schedule
               </button>
             )}
           </div>
@@ -1212,7 +1263,25 @@ function App() {
                   className="toggle-timetable-button"
                   onClick={toggleTimetable}
                 >
-                  {showTimetable ? 'Hide Timetable' : 'Show Timetable'}
+                  {showTimetable ? (
+                    <>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"></path>
+                        <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"></path>
+                        <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"></path>
+                        <line x1="2" x2="22" y1="2" y2="22"></line>
+                      </svg>
+                      Hide Timetable
+                    </>
+                  ) : (
+                    <>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                      </svg>
+                      Show Timetable
+                    </>
+                  )}
                 </button>
               </div>
 
@@ -1482,8 +1551,23 @@ function App() {
           />
 
           <div className="table-action-controls">
-            <button onClick={handleClearAllLocks}>Clear All Locks</button>
-            <button className="danger-button" onClick={handleDeleteAllCourses}>Delete All Courses</button>
+            <button onClick={handleClearAllLocks}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+              Clear All Locks
+            </button>
+            <button className="danger-button" onClick={handleDeleteAllCourses}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 6h18"></path>
+                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                <path d="M10 11v6"></path>
+                <path d="M14 11v6"></path>
+              </svg>
+              Delete All Courses
+            </button>
           </div>
 
           <div>
