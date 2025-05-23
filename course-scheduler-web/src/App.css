@@ -612,7 +612,6 @@ button:disabled:hover {
   background-color: var(--danger-button-hover-bg);
 }
 
-/* Form elements */
 input[type="text"],
 input[type="number"],
 input[type="email"],
@@ -663,7 +662,6 @@ input[type="radio"] {
   max-width: 300px;
 }
 
-/* Table styles */
 .course-table {
   width: 100%;
   table-layout: fixed;
@@ -746,7 +744,6 @@ input[type="radio"] {
   gap: var(--space-2);
   justify-content: center;
   align-items: center;
-  display: flex;
 }
 
 .course-table tr {
@@ -789,28 +786,21 @@ input[type="radio"] {
   background-color: var(--locked-row-bg);
   color: var(--locked-row-text);
   position: relative;
+  border-left: 4px solid var(--lock-button-locked-bg);
+}
+
+.course-table-body tr.locked-row td.data-cell {
+  box-shadow: none;
+  padding-left: var(--space-4);
+}
+
+.course-table-body tr.locked-row td.actions-cell {
+  box-shadow: none;
+  padding-left: var(--space-2);
 }
 
 .course-table-body tr.locked-row::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  height: 100%;
-  width: 4px;
-  background-color: var(--lock-button-locked-bg);
-  border-top-left-radius: var(--border-radius-sm);
-  border-bottom-left-radius: var(--border-radius-sm);
-}
-
-.course-table-body tr.locked-row.even-row,
-.group-courses tr.course-row.locked-row.even-row {
-  background-color: var(--locked-row-bg);
-}
-
-.course-table-body tr.locked-row.odd-row,
-.group-courses tr.course-row.locked-row.odd-row {
-  background-color: var(--locked-row-bg);
+  content: none;
 }
 
 .course-table-body tr:not(.locked-row):hover {
@@ -947,7 +937,7 @@ input[type="radio"] {
   accent-color: var(--accent);
 }
 
-.day-label input[type="checkbox"]:checked + span {
+.day-label input[type="checkbox"]:checked+span {
   font-weight: var(--font-weight-medium);
   color: var(--accent);
 }
@@ -1002,7 +992,6 @@ input[type="radio"] {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* Preferences section */
 .preferences-filters-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -1118,7 +1107,6 @@ input[type="radio"] {
   background-color: var(--button-hover-bg);
 }
 
-/* Status filter buttons */
 .status-filter-controls {
   display: flex;
   align-items: center;
@@ -1146,7 +1134,6 @@ input[type="radio"] {
   border-color: var(--accent);
 }
 
-/* Section type checkboxes */
 .section-type-filters {
   display: flex;
   flex-direction: column;
@@ -1174,12 +1161,11 @@ input[type="radio"] {
   margin-right: var(--space-3);
 }
 
-.section-type-checkbox input[type="checkbox"]:checked + span {
+.section-type-checkbox input[type="checkbox"]:checked+span {
   font-weight: var(--font-weight-medium);
   color: var(--accent);
 }
 
-/* Timetable section */
 .timetable-section {
   margin-bottom: var(--space-6);
 }
@@ -1212,13 +1198,16 @@ input[type="radio"] {
   background-color: var(--accent-hover);
 }
 
-/* Animation for spinner */
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
-/* Raw data input */
 .raw-data-input {
   display: flex;
   flex-direction: column;
@@ -1383,6 +1372,7 @@ input[type="time"]:focus-visible {
 [data-theme='light'] .course-table-row.locked-row.conflict-highlight {
   background-color: #ffe0e0 !important;
   border-left: 5px solid #e53935 !important;
+  color: #b71c1c !important;
 }
 
 .course-table-row {
@@ -2306,4 +2296,12 @@ a:focus {
   background-color: #ffe0e0 !important;
   border-left: 5px solid #e53935 !important;
   color: #b71c1c !important;
+}
+
+.course-table-body tr.locked-row td.data-cell {
+  padding-left: calc(var(--space-4) - 4px) !important;
+}
+
+.course-table-body tr.locked-row td.actions-cell {
+  padding-left: calc(var(--space-2) - 4px) !important;
 }
