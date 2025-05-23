@@ -1,4 +1,5 @@
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import PaletteOutlinedIcon from '@mui/icons-material/PaletteOutlined';
 import Tooltip from '@mui/material/Tooltip';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { toast, ToastContainer } from 'react-toastify';
@@ -24,6 +25,7 @@ const LOCAL_STORAGE_KEYS = {
   EXCLUDED_DAYS: 'courseBuilder_excludedDays',
   EXCLUDED_RANGES: 'courseBuilder_excludedTimeRanges',
   THEME: 'courseBuilder_theme',
+  THEME_PALETTE: 'courseBuilder_themePalette',
   GROUPING: 'courseBuilder_groupingKey',
   SECTION_TYPES: 'courseBuilder_selectedSectionTypes',
   STATUS_FILTER: 'courseBuilder_selectedStatusFilter',
@@ -52,6 +54,15 @@ const loadFromLocalStorage = (key, defaultValue) => {
 
     if (key === LOCAL_STORAGE_KEYS.THEME) {
       return parsed === 'light' ? 'light' : 'dark';
+    }
+    if (key === LOCAL_STORAGE_KEYS.THEME_PALETTE) {
+      if (parsed && typeof parsed === 'object' &&
+        ('light' in parsed && ('original' === parsed.light || 'comfort' === parsed.light)) &&
+        ('dark' in parsed && ('original' === parsed.dark || 'comfort' === parsed.dark))) {
+        return parsed;
+      } else {
+        return defaultValue;
+      }
     }
     if (key === LOCAL_STORAGE_KEYS.GROUPING) {
       return ALLOWED_GROUPING_KEYS.includes(parsed) ? parsed : 'subject';
@@ -89,6 +100,7 @@ const loadFromLocalStorage = (key, defaultValue) => {
     console.error(`Failed to parse ${key} from localStorage:`, e);
     if (key === LOCAL_STORAGE_KEYS.GROUPING) return 'subject';
     if (key === LOCAL_STORAGE_KEYS.THEME) return 'dark';
+    if (key === LOCAL_STORAGE_KEYS.THEME_PALETTE) return { light: 'original', dark: 'original' };
     if (key === LOCAL_STORAGE_KEYS.SECTION_TYPES) return [];
     if (key === LOCAL_STORAGE_KEYS.STATUS_FILTER) return 'open';
     if (key === LOCAL_STORAGE_KEYS.COURSES) return [];
@@ -450,11 +462,12 @@ function App() {
   const [allCourses, setAllCourses] = useState(() => loadFromLocalStorage(LOCAL_STORAGE_KEYS.COURSES, []));
   const [excludedDays, setExcludedDays] = useState(() => loadFromLocalStorage(LOCAL_STORAGE_KEYS.EXCLUDED_DAYS, []));
   const [excludedTimeRanges, setExcludedTimeRanges] = useState(() => {
-    const savedRanges = loadFromLocalStorage(LOCAL_STORAGE_KEYS.EXCLUDED_RANGES, [{ id: Date.now(), start: '', end: '' }]);
-    return Array.isArray(savedRanges) && savedRanges.length > 0 ? savedRanges : [{ id: Date.now(), start: '', end: '' }];
+    const savedRanges = loadFromLocalStorage(LOCAL_STORAGE_KEYS.EXCLUDED_RANGES, [{ id: Date.now(), start: '', end: '', }]);
+    return Array.isArray(savedRanges) && savedRanges.length > 0 ? savedRanges : [{ id: Date.now(), start: '', end: '', }];
   });
   const [rawData, setRawData] = useState('');
   const [theme, setTheme] = useState(() => loadFromLocalStorage(LOCAL_STORAGE_KEYS.THEME, 'dark'));
+  const [themePalette, setThemePalette] = useState(() => loadFromLocalStorage(LOCAL_STORAGE_KEYS.THEME_PALETTE, { light: 'original', dark: 'original' }));
   const [groupingKey, setGroupingKey] = useState(() =>
     loadFromLocalStorage(LOCAL_STORAGE_KEYS.GROUPING, 'subject')
   );
@@ -514,7 +527,17 @@ function App() {
   useEffect(() => { localStorage.setItem(LOCAL_STORAGE_KEYS.COURSES, JSON.stringify(allCourses)); }, [allCourses]);
   useEffect(() => { localStorage.setItem(LOCAL_STORAGE_KEYS.EXCLUDED_DAYS, JSON.stringify(excludedDays)); }, [excludedDays]);
   useEffect(() => { localStorage.setItem(LOCAL_STORAGE_KEYS.EXCLUDED_RANGES, JSON.stringify(excludedTimeRanges)); }, [excludedTimeRanges]);
-  useEffect(() => { localStorage.setItem(LOCAL_STORAGE_KEYS.THEME, JSON.stringify(theme)); document.documentElement.setAttribute('data-theme', theme); }, [theme]);
+  useEffect(() => {
+    localStorage.setItem(LOCAL_STORAGE_KEYS.THEME, JSON.stringify(theme));
+    document.documentElement.setAttribute('data-theme', theme);
+    const currentPalette = themePalette[theme];
+    if (currentPalette) {
+      document.documentElement.setAttribute('data-palette', currentPalette);
+    } else {
+      document.documentElement.setAttribute('data-palette', 'original');
+    }
+  }, [theme, themePalette]);
+  useEffect(() => { localStorage.setItem(LOCAL_STORAGE_KEYS.THEME_PALETTE, JSON.stringify(themePalette)); }, [themePalette]);
   useEffect(() => { localStorage.setItem(LOCAL_STORAGE_KEYS.GROUPING, JSON.stringify(groupingKey)); }, [groupingKey]);
   useEffect(() => { localStorage.setItem(LOCAL_STORAGE_KEYS.SECTION_TYPES, JSON.stringify(selectedSectionTypes)); }, [selectedSectionTypes]);
   useEffect(() => { localStorage.setItem(LOCAL_STORAGE_KEYS.STATUS_FILTER, JSON.stringify(selectedStatusFilter)); }, [selectedStatusFilter]);
@@ -778,6 +801,17 @@ function App() {
     });
   };
   const handleToggleTheme = () => { setTheme(prev => (prev === 'light' ? 'dark' : 'light')); };
+  const handleTogglePalette = () => {
+    setThemePalette(prev => {
+      const currentTheme = theme;
+      const currentPalette = prev[currentTheme];
+      const newPalette = currentPalette === 'original' ? 'comfort' : 'original';
+      return {
+        ...prev,
+        [currentTheme]: newPalette,
+      };
+    });
+  };
   const handleGroupingChange = (event) => { setGroupingKey(event.target.value); };
   const handleSectionTypeChange = (typeId, isSelected) => { setSelectedSectionTypes(prev => isSelected ? [...new Set([...prev, typeId])] : prev.filter(id => id !== typeId)); };
   const handleStatusFilterChange = (statusValue) => { setSelectedStatusFilter(statusValue); };
@@ -790,16 +824,7 @@ function App() {
   };
   const handleMaxClassGapHoursChange = (e) => {
     let value = e.target.value;
-    if (value === '') {
-      setMaxClassGapHours('');
-      return;
-    }
-    const numValue = parseFloat(value);
-    if (!isNaN(numValue) && numValue >= 0 && numValue <= 3) {
-      setMaxClassGapHours(value);
-    } else if (value.endsWith('.') && parseFloat(value.slice(0, -1)) >= 0 && parseFloat(value.slice(0, -1)) <= 3) {
-      setMaxClassGapHours(value);
-    }
+    setMaxClassGapHours(value);
   };
   const handleRemoveTimePref = (index) => {
     setPreferredTimeOfDayOrder(prev => prev.filter((_, i) => i !== index));
@@ -1199,6 +1224,10 @@ function App() {
                 </>
               )}
             </button>
+            <button className="palette-toggle-button" onClick={handleTogglePalette}>
+              <PaletteOutlinedIcon fontSize="small" />
+              {themePalette[theme] === 'original' ? 'Switch to Comfort Palette' : 'Switch to Original Palette'}
+            </button>
           </div>
 
           <div className="auto-schedule-controls">
@@ -1377,16 +1406,21 @@ function App() {
                     <InfoOutlinedIcon style={{ color: '#1976d2', cursor: 'pointer', fontSize: 20 }} />
                   </Tooltip>
                 </label>
-                <input
-                  type="number"
+                <select
                   id="maxGapInput"
                   value={maxClassGapHours}
                   onChange={handleMaxClassGapHoursChange}
-                  placeholder="e.g., 1 hour, 0.5 for 30 min, 2 for 2 hours"
-                  min="0"
-                  step="0.5"
                   className="preference-input"
-                />
+                >
+                  <option value="">Any</option>
+                  {[...Array(11).keys()].map(i => {
+                    const hours = Math.floor(i / 2);
+                    const minutes = (i % 2) * 30;
+                    const value = i * 0.5;
+                    const label = value === 0 ? '0 minutes (back-to-back)' : `${hours ? hours + ' hour' + (hours > 1 ? 's' : '') : ''}${hours && minutes ? ' ' : ''}${minutes ? minutes + ' minutes' : ''}`.trim();
+                    return <option key={value} value={value}>{label}</option>;
+                  })}
+                </select>
               </div>
             </div>
             <div className="preference-item preferred-time-preference-item">

@@ -3,7 +3,15 @@ import DatePicker from 'react-datepicker';
 
 import 'react-datepicker/dist/react-datepicker.css';
 
-const availableDays = ['M', 'T', 'W', 'TH', 'F', 'S'];
+const availableDays = [
+  { code: 'M', name: 'Monday' },
+  { code: 'T', name: 'Tuesday' },
+  { code: 'W', name: 'Wednesday' },
+  { code: 'TH', name: 'Thursday' },
+  { code: 'F', name: 'Friday' },
+  { code: 'S', name: 'Saturday' },
+  { code: 'SU', name: 'Sunday' },
+];
 
 /**
  * @typedef {object} TimeRange
@@ -71,13 +79,14 @@ function TimeFilter({
         <label className="filter-label">Exclude Days:</label>
         <div className="day-checkboxes">
           {availableDays.map((day) => (
-            <label key={day} className="day-label">
+            <label key={day.code} className="day-label">
               <input
                 type="checkbox"
-                checked={excludedDays.includes(day)}
-                onChange={(e) => onDayChange(day, e.target.checked)}
+                checked={excludedDays.includes(day.code)}
+                onChange={(e) => onDayChange(day.code, e.target.checked)}
+                aria-label={`Exclude ${day.name}`}
               />
-              <span>{day}</span>
+              <span>{day.name}</span>
             </label>
           ))}
         </div>
