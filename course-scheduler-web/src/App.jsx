@@ -1581,7 +1581,7 @@ function App() {
         <div className="section-container">
           <h2>Import Data</h2>
           <p>
-            Need help? Check out the <a href="https://github.com/MasuRii/CITUCourseBuilder/blob/main/README.md#usage-guide" target="_blank" rel="noopener noreferrer">Usage Guide</a> for instructions on how to import data.
+            Need help? Check out the <a href="https://github.com/MasuRii/CITUCourseBuilder/blob/main/UsageGuide.md#usage-guide" target="_blank" rel="noopener noreferrer">Usage Guide</a> for instructions on how to import data.
           </p>
           <RawDataInput
             value={rawData}
