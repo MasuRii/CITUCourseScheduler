@@ -1478,6 +1478,18 @@ input[type="time"]:focus-visible {
   color: #b71c1c !important;
 }
 
+[data-theme='dark'] .course-table-row.locked-row.conflict-highlight {
+  background-color: #b71c1c !important;
+  border-left: 5px solid #ff5252 !important;
+}
+
+[data-theme='dark'][data-palette='comfort'] .course-table-row.locked-row.conflict-highlight {
+  background-color: #b71c1c !important;
+  border-left: 5px solid #ff5252 !important;
+  color: var(--text-color) !important;
+  /* Ensure text remains legible */
+}
+
 .course-table-row {
   cursor: pointer;
   transition: background-color 0.2s ease;
