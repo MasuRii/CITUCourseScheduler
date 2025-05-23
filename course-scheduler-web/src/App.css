@@ -844,9 +844,12 @@ input[type="radio"] {
 }
 
 .course-table td.actions-cell {
+  text-align: center;
+  white-space: nowrap;
   gap: var(--space-2);
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
+  padding: var(--space-3) var(--space-4);
 }
 
 .course-table tr {
@@ -958,6 +961,22 @@ input[type="radio"] {
   border-radius: var(--border-radius-md);
   font-size: var(--font-size-sm);
   border-left: 4px solid var(--danger);
+}
+
+.conflict-icon-container {
+  /* Set a fixed size based on the icon and its original margin */
+  width: calc(16px + var(--space-1));
+  /* icon size + left margin */
+  min-width: calc(16px + var(--space-1));
+  /* Ensure it doesn't shrink */
+  height: 16px;
+  /* Approximate icon height */
+  display: flex;
+  /* Use flex to center the icon within the container if needed */
+  align-items: center;
+  justify-content: center;
+  margin-left: var(--space-1);
+  /* Apply the left margin */
 }
 
 .time-filter {
