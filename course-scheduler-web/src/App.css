@@ -633,7 +633,8 @@ button:disabled:hover {
 .lock-button.locked {
   background-color: var(--lock-button-locked-bg);
   color: var(--lock-button-locked-text);
-  border: 1px solid var(--lock-button-locked-border);
+  border-color: var(--lock-button-locked-border);
+  padding: var(--space-2) var(--space-3);
 }
 
 .lock-button.unlocked {
@@ -964,19 +965,13 @@ input[type="radio"] {
 }
 
 .conflict-icon-container {
-  /* Set a fixed size based on the icon and its original margin */
   width: calc(16px + var(--space-1));
-  /* icon size + left margin */
   min-width: calc(16px + var(--space-1));
-  /* Ensure it doesn't shrink */
   height: 16px;
-  /* Approximate icon height */
   display: flex;
-  /* Use flex to center the icon within the container if needed */
   align-items: center;
   justify-content: center;
   margin-left: var(--space-1);
-  /* Apply the left margin */
 }
 
 .time-filter {
@@ -1506,7 +1501,10 @@ input[type="time"]:focus-visible {
   background-color: #b71c1c !important;
   border-left: 5px solid #ff5252 !important;
   color: var(--text-color) !important;
-  /* Ensure text remains legible */
+}
+
+.course-table-row.locked-row.conflict-highlight .delete-button {
+  color: var(--text-color);
 }
 
 .course-table-row {
@@ -2428,13 +2426,9 @@ a:focus {
 .course-table-body tr.locked-row td.actions-cell {
   box-shadow: none;
   padding-left: calc(var(--space-4) + 4px);
-  /* Adjust padding to account for the 4px border and match default left padding */
   padding-right: var(--space-4);
-  /* Ensure right padding is consistent */
   padding-top: var(--space-3);
-  /* Ensure top padding is consistent */
   padding-bottom: var(--space-3);
-  /* Ensure bottom padding is consistent */
 }
 
 .app-controls {

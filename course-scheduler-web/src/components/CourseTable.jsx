@@ -80,10 +80,10 @@ function CourseTable({ courses, groupingKey, onDeleteCourse, onToggleLockCourse,
                       className={`lock-button ${course.isLocked ? 'locked' : 'unlocked'}`}
                       title={course.isLocked ? 'Unlock Course' : 'Lock Course'}
                     >
-                      {course.isLocked ? 'Unlock' : 'Lock'}
                       {course.isLocked && conflictingLockedCourseIds && conflictingLockedCourseIds.has(course.id) && (
                         <span className="conflict-icon" title="Schedule conflict with another locked course" aria-label="Schedule conflict">⚠️</span>
                       )}
+                      {course.isLocked ? 'Unlock' : 'Lock'}
                     </button>
                     <button
                       onClick={() => onDeleteCourse({ id: course.id, subject: course.subject, section: course.section })}
@@ -117,10 +117,10 @@ function CourseTable({ courses, groupingKey, onDeleteCourse, onToggleLockCourse,
                   className={`lock-button ${course.isLocked ? 'locked' : 'unlocked'}`}
                   title={course.isLocked ? 'Unlock Course' : 'Lock Course'}
                 >
-                  {course.isLocked ? 'Unlock' : 'Lock'}
                   {course.isLocked && conflictingLockedCourseIds && conflictingLockedCourseIds.has(course.id) && (
                     <span className="conflict-icon" title="Schedule conflict with another locked course" aria-label="Schedule conflict">⚠️</span>
                   )}
+                  {course.isLocked ? 'Unlock' : 'Lock'}
                 </button>
                 <button
                   onClick={() => onDeleteCourse({ id: course.id, subject: course.subject, section: course.section })}
