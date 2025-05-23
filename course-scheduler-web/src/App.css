@@ -2403,3 +2403,13 @@ a:focus {
   gap: var(--space-4);
   align-items: center;
 }
+
+[data-theme="dark"] .grouping-controls select {
+  background-color: var(--filter-bg);
+  color: var(--text-color);
+}
+
+[data-theme="dark"][data-palette="comfort"] .grouping-controls select {
+  background-color: var(--filter-bg);
+  color: var(--text-color);
+}
