@@ -1,4 +1,10 @@
-import React, { Fragment } from 'react';
+import MenuIcon from '@mui/icons-material/Menu';
+import IconButton from '@mui/material/IconButton';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import { Fragment, useState } from 'react';
+import { toast } from 'react-toastify';
+import { convertCoursesToRawData } from '../utils/convertToRawData';
 
 /**
  * Renders a table displaying course information, potentially grouped.
@@ -32,8 +38,108 @@ function CourseTable({ courses, groupingKey, onDeleteCourse, onToggleLockCourse,
     return baseClasses.join(' ');
   };
 
+  const [anchorEl, setAnchorEl] = useState(null);
+  const open = Boolean(anchorEl);
+
+  const handleMenuClick = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleCopyToClipboard = () => {
+    try {
+      if (!navigator.clipboard) {
+        throw new Error('Clipboard API not available');
+      }
+
+      const allCourses = isGrouped
+        ? courses.flatMap(group => group.courses)
+        : courses;
+
+      const rawData = convertCoursesToRawData(allCourses);
+
+      if (!rawData) {
+        toast.warning('No course data to copy');
+        return;
+      }
+
+      navigator.clipboard.writeText(rawData)
+        .then(() => {
+          toast.success('Course data copied to clipboard!');
+        })
+        .catch(err => {
+          console.error('Failed to copy:', err);
+          toast.error('Failed to copy course data');
+        });
+    } catch (err) {
+      console.error('Error copying to clipboard:', err);
+      toast.error('Failed to copy course data');
+    } finally {
+      handleMenuClose();
+    }
+  };
+
+  const handleDownloadAsText = () => {
+    try {
+      const allCourses = isGrouped
+        ? courses.flatMap(group => group.courses)
+        : courses;
+
+      const rawData = convertCoursesToRawData(allCourses);
+
+      if (!rawData) {
+        toast.warning('No course data to download');
+        return;
+      }
+
+      const blob = new Blob([rawData], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'course_list_export.txt';
+      document.body.appendChild(a);
+      a.click();
+
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 100);
+
+      toast.success('Downloading course_list_export.txt...');
+    } catch (err) {
+      console.error('Error downloading course data:', err);
+      toast.error('Failed to download course data');
+    } finally {
+      handleMenuClose();
+    }
+  };
+
   return (
     <div className="table-container">
+      <div className="table-controls">
+        <IconButton
+          aria-label="export menu"
+          aria-controls="export-menu"
+          aria-haspopup="true"
+          onClick={handleMenuClick}
+          color="inherit"
+        >
+          <MenuIcon />
+        </IconButton>
+        <Menu
+          id="export-menu"
+          anchorEl={anchorEl}
+          open={open}
+          onClose={handleMenuClose}
+        >
+          <MenuItem onClick={handleCopyToClipboard}>Copy Raw Data to Clipboard</MenuItem>
+          <MenuItem onClick={handleDownloadAsText}>Download Raw Data as .txt</MenuItem>
+        </Menu>
+      </div>
       <table className="course-table">
         <thead className="course-table-header">
           <tr>
