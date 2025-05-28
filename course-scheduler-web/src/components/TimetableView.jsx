@@ -1,4 +1,12 @@
-import React from 'react';
+import MenuIcon from '@mui/icons-material/Menu';
+import IconButton from '@mui/material/IconButton';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import Tooltip from '@mui/material/Tooltip';
+import { toPng } from 'html-to-image';
+import jsPDF from 'jspdf';
+import React, { useRef, useState } from 'react';
+import { toast } from 'react-toastify';
 import { parseSchedule } from '../utils/parseSchedule';
 
 const TIME_SLOTS = [
@@ -34,6 +42,104 @@ const formatTo12Hour = (timeStr) => {
  * @param {Set} props.conflictingLockedCourseIds Set of conflicting locked course IDs
  */
 function TimetableView({ lockedCourses, conflictingLockedCourseIds = new Set() }) {
+    const [anchorEl, setAnchorEl] = useState(null);
+    const timetableRef = useRef(null);
+
+    const handleMenuOpen = (event) => {
+        setAnchorEl(event.currentTarget);
+    };
+
+    const handleMenuClose = () => {
+        setAnchorEl(null);
+    };
+
+    const handleExportAsPng = () => {
+        handleMenuClose();
+
+        if (!timetableRef.current) {
+            toast.error('Could not find timetable element to export');
+            return;
+        }
+
+        toast.info('Exporting timetable as PNG...');
+
+        const options = {
+            cacheBust: true,
+            quality: 1,
+            skipFonts: true,
+            fontEmbedCSS: '',
+            filter: (node) => {
+                return node.nodeName !== 'SCRIPT';
+            }
+        };
+
+        toPng(timetableRef.current, options)
+            .then((dataUrl) => {
+                const link = document.createElement('a');
+                link.download = 'timetable_export.png';
+                link.href = dataUrl;
+                link.click();
+                toast.success('Timetable exported as PNG successfully!');
+            })
+            .catch((error) => {
+                console.error('Error exporting timetable as PNG:', error);
+                toast.error('Failed to export timetable as PNG. Please try again.');
+            });
+    };
+
+    const handleExportAsPdf = async () => {
+        handleMenuClose();
+
+        if (!timetableRef.current) {
+            toast.error('Could not find timetable element to export');
+            return;
+        }
+
+        toast.info('Exporting timetable as PDF...');
+
+        try {
+            const options = {
+                cacheBust: true,
+                quality: 1,
+                skipFonts: true,
+                fontEmbedCSS: '',
+                filter: (node) => {
+                    return node.nodeName !== 'SCRIPT';
+                }
+            };
+
+            const dataUrl = await toPng(timetableRef.current, options);
+
+            const img = new Image();
+            img.src = dataUrl;
+
+            await new Promise((resolve) => {
+                img.onload = resolve;
+            });
+
+            const pdf = new jsPDF({
+                orientation: img.width > img.height ? 'landscape' : 'portrait',
+                unit: 'px',
+                format: [img.width + 40, img.height + 60]
+            });
+
+            pdf.setFontSize(16);
+            pdf.text('CITU Course Schedule', 20, 30);
+
+            const now = new Date();
+            pdf.setFontSize(10);
+            pdf.text(`Generated: ${now.toLocaleDateString()} ${now.toLocaleTimeString()}`, 20, 45);
+
+            pdf.addImage(dataUrl, 'PNG', 20, 60, img.width, img.height);
+
+            pdf.save('timetable_export.pdf');
+            toast.success('Timetable exported as PDF successfully!');
+        } catch (error) {
+            console.error('Error exporting timetable as PDF:', error);
+            toast.error('Failed to export timetable as PDF. Please try again.');
+        }
+    };
+
     if (!lockedCourses || lockedCourses.length === 0) {
         return <div className="timetable-empty">No locked courses to display in timetable.</div>;
     }
@@ -121,10 +227,35 @@ function TimetableView({ lockedCourses, conflictingLockedCourseIds = new Set() }
 
     return (
         <div className="timetable-container">
+            <div className="timetable-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <h3 className="timetable-title">Weekly Timetable</h3>
+                <Tooltip title="Export Timetable">
+                    <IconButton
+                        aria-label="Export timetable options"
+                        onClick={handleMenuOpen}
+                        size="small"
+                    >
+                        <MenuIcon />
+                    </IconButton>
+                </Tooltip>
+                <Menu
+                    anchorEl={anchorEl}
+                    open={Boolean(anchorEl)}
+                    onClose={handleMenuClose}
+                >
+                    <MenuItem onClick={handleExportAsPng}>
+                        Export Timetable as PNG
+                    </MenuItem>
+                    <MenuItem onClick={handleExportAsPdf}>
+                        Export Timetable as PDF
+                    </MenuItem>
+                </Menu>
+            </div>
             <table
                 className="timetable"
                 role="table"
                 aria-label="Weekly timetable of locked courses"
+                ref={timetableRef}
             >
                 <caption className="visually-hidden">
                     Weekly timetable showing locked courses by day and time slot.
