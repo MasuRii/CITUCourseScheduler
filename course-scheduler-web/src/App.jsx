@@ -1,7 +1,7 @@
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import PaletteOutlinedIcon from '@mui/icons-material/PaletteOutlined';
 import Tooltip from '@mui/material/Tooltip';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
@@ -14,11 +14,6 @@ import TimeFilter from './components/TimeFilter';
 import TimetableView from './components/TimetableView';
 import { parseRawCourseData } from './utils/parseRawData';
 import { parseSchedule } from './utils/parseSchedule';
-
-/**
- * @typedef {import('./components/TimeFilter').TimeRange} TimeRange
- * @typedef {import('./utils/parseRawData').Course} Course // Use Course type from parser
- */
 
 const LOCAL_STORAGE_KEYS = {
   COURSES: 'courseBuilder_allCourses',
@@ -94,7 +89,6 @@ const loadFromLocalStorage = (key, defaultValue) => {
     if (key === LOCAL_STORAGE_KEYS.SCHEDULE_SEARCH_MODE) {
       return ALLOWED_SEARCH_MODES.includes(parsed) ? parsed : 'partial';
     }
-
     return parsed;
   } catch (e) {
     console.error(`Failed to parse ${key} from localStorage:`, e);
@@ -121,15 +115,6 @@ const getSectionTypeSuffix = (sectionString) => {
   return SECTION_TYPE_SUFFIXES.includes(lastPart) ? lastPart : null;
 };
 
-/**
- * Checks if two time intervals overlap.
- * Assumes times are in "HH:mm" format.
- * @param {string} start1 Start time of the first interval
- * @param {string} end1 End time of the first interval
- * @param {string} start2 Start time of the second interval
- * @param {string} end2 End time of the second interval
- * @returns {boolean} True if the intervals overlap, false otherwise.
- */
 function checkTimeOverlap(start1, end1, start2, end2) {
   const timeRegex = /^\d{2}:\d{2}$/;
   if (!timeRegex.test(start1) || !timeRegex.test(end1) || !timeRegex.test(start2) || !timeRegex.test(end2)) {
@@ -138,23 +123,14 @@ function checkTimeOverlap(start1, end1, start2, end2) {
   return start1 < end2 && end1 > start2;
 }
 
-/**
- * Checks if a given schedule (array of course objects) is conflict-free.
- * @param {Course[]} scheduleToTest - Array of course objects.
- * @param {function} parseFn - The parseSchedule function.
- * @param {function} overlapFn - The checkTimeOverlap function.
- * @returns {boolean} True if the schedule is conflict-free, false otherwise.
- */
 function isScheduleConflictFree(scheduleToTest, parseFn, overlapFn) {
   if (!scheduleToTest || scheduleToTest.length <= 1) {
     return true;
   }
-
   for (let i = 0; i < scheduleToTest.length; i++) {
     for (let j = i + 1; j < scheduleToTest.length; j++) {
       const course1 = scheduleToTest[i];
       const course2 = scheduleToTest[j];
-
       const schedule1Result = parseFn(course1.schedule);
       const schedule2Result = parseFn(course2.schedule);
 
@@ -166,7 +142,6 @@ function isScheduleConflictFree(scheduleToTest, parseFn, overlapFn) {
       for (const slot1 of schedule1Result.allTimeSlots) {
         for (const slot2 of schedule2Result.allTimeSlots) {
           const commonDays = slot1.days.filter(day => slot2.days.includes(day));
-
           if (commonDays.length > 0) {
             if (slot1.startTime && slot1.endTime && slot2.startTime && slot2.endTime) {
               if (overlapFn(slot1.startTime, slot1.endTime, slot2.startTime, slot2.endTime)) {
@@ -229,6 +204,7 @@ function exceedsMaxGap(schedule, maxGapHours) {
       }
     }
   }
+
   for (const slots of Object.values(daySlots)) {
     slots.sort((a, b) => a.start.localeCompare(b.start));
     for (let i = 1; i < slots.length; i++) {
@@ -247,6 +223,7 @@ function exceedsMaxGap(schedule, maxGapHours) {
   return false;
 }
 
+
 function generateExhaustiveBestSchedule(coursesBySubject, preferredTimeOfDayOrder, maxUnits, maxGapHours) {
   const subjects = Object.keys(coursesBySubject);
   let bestSchedule = [];
@@ -258,6 +235,7 @@ function generateExhaustiveBestSchedule(coursesBySubject, preferredTimeOfDayOrde
       if (!isScheduleConflictFree(currentSchedule, parseSchedule, checkTimeOverlap)) return;
       if (exceedsMaxUnits(currentSchedule, maxUnits)) return;
       if (exceedsMaxGap(currentSchedule, maxGapHours)) return;
+
       const totalCourses = currentSchedule.length;
       const totalUnits = currentSchedule.reduce((sum, course) => {
         const units = parseFloat(course.creditedUnits || course.units);
@@ -265,6 +243,7 @@ function generateExhaustiveBestSchedule(coursesBySubject, preferredTimeOfDayOrde
       }, 0);
       const score = totalCourses * 100 + totalUnits;
       const timePrefScore = scoreScheduleByTimePreference(currentSchedule, preferredTimeOfDayOrder);
+
       if (
         score > bestScore ||
         (score === bestScore && timePrefScore < bestTimePrefScore)
@@ -275,6 +254,7 @@ function generateExhaustiveBestSchedule(coursesBySubject, preferredTimeOfDayOrde
       }
       return;
     }
+
     const subject = subjects[idx];
     for (const course of coursesBySubject[subject]) {
       let hasConflict = false;
@@ -283,6 +263,7 @@ function generateExhaustiveBestSchedule(coursesBySubject, preferredTimeOfDayOrde
         for (const existingCourse of currentSchedule) {
           const existingScheduleResult = parseSchedule(existingCourse.schedule);
           if (!existingScheduleResult || existingScheduleResult.isTBA || !existingScheduleResult.allTimeSlots || existingScheduleResult.allTimeSlots.length === 0) continue;
+
           for (const newSlot of courseScheduleResult.allTimeSlots) {
             for (const existingSlot of existingScheduleResult.allTimeSlots) {
               const commonDays = newSlot.days.filter(day => existingSlot.days.includes(day));
@@ -300,6 +281,7 @@ function generateExhaustiveBestSchedule(coursesBySubject, preferredTimeOfDayOrde
           if (hasConflict) break;
         }
       }
+
       if (!hasConflict) {
         currentSchedule.push(course);
         backtrack(idx + 1, currentSchedule);
@@ -321,6 +303,7 @@ function getAllSubsets(arr) {
   }
   return result;
 }
+
 
 function generateBestPartialSchedule_Heuristic(
   courses,
@@ -350,9 +333,11 @@ function generateBestPartialSchedule_Heuristic(
       for (let i = 0; i < poolOfCandidatesForAttempt.length; i++) {
         const candidate = poolOfCandidatesForAttempt[i];
         if (currentSubjectsSet.has(candidate.subject)) continue;
+
         const tempScheduleWithCandidateForConstraints = [...currentSchedule, candidate];
         if (exceedsMaxUnits(tempScheduleWithCandidateForConstraints, maxUnits)) continue;
         if (exceedsMaxGap(tempScheduleWithCandidateForConstraints, maxGapHours)) continue;
+
         let conflictsWithCurrent = false;
         const candidateScheduleResult = parseSchedule(candidate.schedule);
         if (candidateScheduleResult && !candidateScheduleResult.isTBA && candidateScheduleResult.allTimeSlots && candidateScheduleResult.allTimeSlots.length > 0) {
@@ -377,6 +362,7 @@ function generateBestPartialSchedule_Heuristic(
           }
         }
         if (conflictsWithCurrent) continue;
+
         const units = parseFloat(candidate.creditedUnits || candidate.units) || 0;
         let priority = 0;
         if (!currentSubjectsSet.has(candidate.subject)) {
@@ -385,12 +371,15 @@ function generateBestPartialSchedule_Heuristic(
           priority = 10000 + units;
         }
         priority += Math.random() * 0.1;
+
+
         if (priority > bestPriorityForThisPass) {
           bestCandidateToAddThisPass = candidate;
           bestPriorityForThisPass = priority;
           indexOfBestCandidateInPool = i;
         }
       }
+
       if (bestCandidateToAddThisPass) {
         currentSchedule.push(bestCandidateToAddThisPass);
         currentSubjectsSet.add(bestCandidateToAddThisPass.subject);
@@ -399,10 +388,12 @@ function generateBestPartialSchedule_Heuristic(
         break;
       }
     }
+
     if (currentSchedule.length > 0) {
       const numSubjects = currentSubjectsSet.size;
       const totalUnits = currentSchedule.reduce((sum, c) => sum + (parseFloat(c.creditedUnits || c.units) || 0), 0);
       const timePrefScore = scoreScheduleByTimePreference(currentSchedule, preferredTimeOfDayOrder);
+
       if (
         numSubjects > bestOverallSubjectsCount ||
         (numSubjects === bestOverallSubjectsCount && totalUnits > bestOverallUnits) ||
@@ -418,24 +409,32 @@ function generateBestPartialSchedule_Heuristic(
   return bestOverallSchedule;
 }
 
+
 function generateBestPartialSchedule(courses, maxUnits, maxGapHours, preferredTimeOfDayOrder) {
   if (!courses || courses.length === 0) return [];
+
   if (courses.length <= SMALL_N_THRESHOLD_PARTIAL) {
     let best = [];
     let bestSubjects = 0;
     let bestUnits = 0;
     let bestTimePref = Infinity;
+
     const allSubsets = getAllSubsets(courses);
+
     for (const subset of allSubsets) {
       if (subset.length === 0) continue;
+
       const subjects = subset.map(c => c.subject);
       if (new Set(subjects).size !== subjects.length) continue;
+
       if (!isScheduleConflictFree(subset, parseSchedule, checkTimeOverlap)) continue;
       if (exceedsMaxUnits(subset, maxUnits)) continue;
       if (exceedsMaxGap(subset, maxGapHours)) continue;
+
       const uniqueSubjects = new Set(subset.map(c => c.subject)).size;
       const totalUnits = subset.reduce((sum, c) => sum + (parseFloat(c.creditedUnits || c.units) || 0), 0);
       const timePrefScore = scoreScheduleByTimePreference(subset, preferredTimeOfDayOrder);
+
       if (
         uniqueSubjects > bestSubjects ||
         (uniqueSubjects === bestSubjects && totalUnits > bestUnits) ||
@@ -457,6 +456,7 @@ function generateBestPartialSchedule(courses, maxUnits, maxGapHours, preferredTi
     );
   }
 }
+
 
 function App() {
   const [allCourses, setAllCourses] = useState(() => loadFromLocalStorage(LOCAL_STORAGE_KEYS.COURSES, []));
@@ -484,6 +484,7 @@ function App() {
     if (Array.isArray(saved) && saved.length > 0) return saved;
     return [...DEFAULT_PREFERRED_TIMES_ORDER];
   });
+
   const [processedCourses, setProcessedCourses] = useState([]);
   const [conflictingLockedCourseIds, setConflictingLockedCourseIds] = useState(new Set());
   const [showTimetable, setShowTimetable] = useState(false);
@@ -564,7 +565,6 @@ function App() {
 
       const parsedScheduleResult = parseSchedule(course.schedule);
       if (!parsedScheduleResult || parsedScheduleResult.isTBA) return true;
-
       if (!parsedScheduleResult.allTimeSlots || parsedScheduleResult.allTimeSlots.length === 0) {
         return true;
       }
@@ -574,25 +574,21 @@ function App() {
         if (slotIsOnExcludedDay) {
           return true;
         }
-
         const slotOverlapsAnExcludedTimeRange = excludedTimeRanges.some(excludedRange => {
           if (excludedRange.start && excludedRange.end && slot.startTime && slot.endTime) {
             return checkTimeOverlap(slot.startTime, slot.endTime, excludedRange.start, excludedRange.end);
           }
           return false;
         });
-
         if (slotOverlapsAnExcludedTimeRange) {
           return true;
         }
-
         return false;
       });
 
       if (anySlotIsExcluded) {
         return false;
       }
-
       return true;
     });
 
@@ -605,6 +601,7 @@ function App() {
         acc[groupValue].push(course);
         return acc;
       }, {});
+
       const groupedArray = Object.entries(groups)
         .map(([groupValue, courses]) => ({
           groupValue,
@@ -619,21 +616,17 @@ function App() {
     }
   }, [allCourses, excludedDays, excludedTimeRanges, groupingKey, selectedSectionTypes, selectedStatusFilter]);
 
-
   useEffect(() => {
     const currentLockedCourses = allCourses.filter(course => course.isLocked);
     console.log(
       '[useEffect/conflicts] Checking conflicts for lockedCourses (count:', currentLockedCourses.length, '). Courses:',
       currentLockedCourses.map(c => ({ id: c.id, subject: c.subject, section: c.section, schedule: c.schedule, isLocked: c.isLocked }))
     );
-
     const conflicts = new Set();
-
     for (let i = 0; i < currentLockedCourses.length; i++) {
       for (let j = i + 1; j < currentLockedCourses.length; j++) {
         const course1 = currentLockedCourses[i];
         const course2 = currentLockedCourses[j];
-
         const schedule1Result = parseSchedule(course1.schedule);
         const schedule2Result = parseSchedule(course2.schedule);
 
@@ -645,7 +638,6 @@ function App() {
         for (const slot1 of schedule1Result.allTimeSlots) {
           for (const slot2 of schedule2Result.allTimeSlots) {
             const commonDays = slot1.days.filter(day => slot2.days.includes(day));
-
             if (commonDays.length > 0) {
               if (slot1.startTime && slot1.endTime && slot2.startTime && slot2.endTime) {
                 const hasTimeOverlap = checkTimeOverlap(slot1.startTime, slot1.endTime, slot2.startTime, slot2.endTime);
@@ -663,7 +655,6 @@ function App() {
     }
     console.log('[useEffect/conflicts] Detected conflict IDs:', Array.from(conflicts));
     setConflictingLockedCourseIds(conflicts);
-
   }, [allCourses]);
 
 
@@ -671,6 +662,7 @@ function App() {
   const handleTimeRangeChange = (id, field, value) => { setExcludedTimeRanges(prev => prev.map(r => r.id === id ? { ...r, [field]: value } : r)); };
   const handleAddTimeRange = () => { setExcludedTimeRanges(prev => [...prev, { id: Date.now(), start: '', end: '' }]); };
   const handleRemoveTimeRange = (id) => { if (excludedTimeRanges.length <= 1) return; setExcludedTimeRanges(prev => prev.filter(r => r.id !== id)); };
+
   const handleLoadRawData = () => {
     try {
       const p = parseRawCourseData(rawData);
@@ -680,7 +672,6 @@ function App() {
         isLocked: course.isLocked ?? false,
         isClosed: course.isClosed ?? (course.totalSlots > 0 && course.enrolled >= course.totalSlots),
       }));
-
       setAllCourses(prevCourses => [...prevCourses, ...coursesWithDefaults]);
       toast.success(`Added ${coursesWithDefaults.length} courses!`);
     } catch (error) {
@@ -688,10 +679,12 @@ function App() {
       toast.error(`Error loading data: ${error.message}`);
     }
   };
+
   const handleDeleteCourse = (courseIdentity) => {
     const { id, subject, section } = courseIdentity;
     setAllCourses(prev => prev.filter(c => !(c.id === id && c.subject === subject && c.section === section)));
   };
+
   const handleDeleteAllCourses = () => {
     setConfirmDialog({
       open: true,
@@ -705,6 +698,7 @@ function App() {
       onCancel: () => setConfirmDialog(d => ({ ...d, open: false })),
     });
   };
+
   const handleToggleLockCourse = (courseIdentity) => {
     const { id, subject, section } = courseIdentity;
     console.log('Toggling lock for course:', courseIdentity);
@@ -725,7 +719,6 @@ function App() {
 
     const lockedCourses = allCourses.filter(c => c.isLocked);
     console.log('Current locked courses:', lockedCourses);
-
     const courseToLock = courseBeforeToggle;
     const scheduleToLock = parseSchedule(courseToLock.schedule);
     console.log('Schedule of course to lock:', scheduleToLock);
@@ -743,10 +736,8 @@ function App() {
     const conflictingCourses = [];
     for (const lockedCourse of lockedCourses) {
       console.log(`Checking for conflict with locked course: ${lockedCourse.subject} ${lockedCourse.section}`);
-
       const lockedSchedule = parseSchedule(lockedCourse.schedule);
       console.log('Schedule of locked course:', lockedSchedule);
-
       if (!lockedSchedule || lockedSchedule.isTBA || !lockedSchedule.startTime || !lockedSchedule.endTime) {
         console.log('Locked course has TBA or invalid schedule, skipping');
         continue;
@@ -754,11 +745,9 @@ function App() {
 
       const commonDays = scheduleToLock.days.filter(day => lockedSchedule.days.includes(day));
       console.log('Common days:', commonDays);
-
       if (commonDays.length > 0) {
         const hasTimeOverlap = checkTimeOverlap(scheduleToLock.startTime, scheduleToLock.endTime, lockedSchedule.startTime, lockedSchedule.endTime);
         console.log(`Time overlap check: ${scheduleToLock.startTime}-${scheduleToLock.endTime} and ${lockedSchedule.startTime}-${lockedSchedule.endTime}: ${hasTimeOverlap}`);
-
         if (hasTimeOverlap) {
           console.log(`Conflict detected with course: ${lockedCourse.subject} ${lockedCourse.section}`);
           conflictingCourses.push(lockedCourse);
@@ -800,6 +789,7 @@ function App() {
       return updatedCourses;
     });
   };
+
   const handleToggleTheme = () => { setTheme(prev => (prev === 'light' ? 'dark' : 'light')); };
   const handleTogglePalette = () => {
     setThemePalette(prev => {
@@ -812,10 +802,10 @@ function App() {
       };
     });
   };
+
   const handleGroupingChange = (event) => { setGroupingKey(event.target.value); };
   const handleSectionTypeChange = (typeId, isSelected) => { setSelectedSectionTypes(prev => isSelected ? [...new Set([...prev, typeId])] : prev.filter(id => id !== typeId)); };
   const handleStatusFilterChange = (statusValue) => { setSelectedStatusFilter(statusValue); };
-
   const handleMaxUnitsChange = (e) => {
     const value = e.target.value;
     if (value === '' || (/^[0-9]*$/.test(value) && parseInt(value, 10) >= 0)) {
@@ -835,16 +825,6 @@ function App() {
   const handleAddTimePref = (time) => {
     setPreferredTimeOfDayOrder(prev => prev.includes(time) ? prev : [...prev, time]);
   };
-
-  const displayedCount = useMemo(() => {
-    if (!Array.isArray(processedCourses)) return 0;
-    if (groupingKey === 'none') {
-      return processedCourses.length;
-    }
-    return processedCourses.reduce((sum, group) => {
-      return sum + (group && group.courses ? group.courses.length : 0);
-    }, 0);
-  }, [processedCourses, groupingKey]);
 
   const lockedCourses = useMemo(() => {
     return allCourses.filter(course => course.isLocked);
@@ -903,16 +883,14 @@ function App() {
     handleClearAllLocks();
   };
 
-  /**
-   * Generates an optimized schedule based on available courses and user filters
-   */
+
   const generateBestSchedule = async () => {
     if (isGenerating) return;
     setIsGenerating(true);
     await new Promise(resolve => setTimeout(resolve, 0));
+
     try {
       const unlockedCourses = allCourses.map(c => ({ ...c, isLocked: false }));
-
       const filteredCourses = unlockedCourses.filter(course => {
         if (selectedStatusFilter === 'open' && course.isClosed === true) return false;
         if (selectedStatusFilter === 'closed' && course.isClosed === false) return false;
@@ -940,11 +918,9 @@ function App() {
           if (slotOverlapsAnExcludedTimeRange) return true;
           return false;
         });
-
         if (anySlotIsExcluded) {
           return false;
         }
-
         return true;
       });
 
@@ -1025,6 +1001,7 @@ function App() {
         return;
       }
 
+
       const generateCombinationKey = (courses) => {
         return courses.map(c => c.id).sort().join(',');
       };
@@ -1037,12 +1014,9 @@ function App() {
 
       while (attempts < maxAttempts) {
         attempts++;
-
         let currentSchedule = [];
-
         Object.values(coursesBySubject).forEach(subjectCourses => {
           const shuffledCourses = [...subjectCourses].sort(() => Math.random() - 0.5);
-
           for (const course of shuffledCourses) {
             const courseScheduleResult = parseSchedule(course.schedule);
             if (!courseScheduleResult || courseScheduleResult.isTBA || !courseScheduleResult.allTimeSlots || courseScheduleResult.allTimeSlots.length === 0) {
@@ -1056,7 +1030,6 @@ function App() {
               if (!existingScheduleResult || existingScheduleResult.isTBA || !existingScheduleResult.allTimeSlots || existingScheduleResult.allTimeSlots.length === 0) {
                 continue;
               }
-
               for (const newSlot of courseScheduleResult.allTimeSlots) {
                 for (const existingSlot of existingScheduleResult.allTimeSlots) {
                   const commonDays = newSlot.days.filter(day => existingSlot.days.includes(day));
@@ -1071,10 +1044,8 @@ function App() {
                 }
                 if (hasConflictWithCurrentSelection) break;
               }
-
               if (hasConflictWithCurrentSelection) break;
             }
-
             if (!hasConflictWithCurrentSelection) {
               currentSchedule.push(course);
               break;
@@ -1085,21 +1056,17 @@ function App() {
         if (!isScheduleConflictFree(currentSchedule, parseSchedule, checkTimeOverlap)) {
           continue;
         }
-
         if (exceedsMaxUnits(currentSchedule, maxUnits)) {
           continue;
         }
-
         if (exceedsMaxGap(currentSchedule, maxClassGapHours)) {
           continue;
         }
 
         const scheduleKey = generateCombinationKey(currentSchedule);
-
         if (triedScheduleCombinations.has(scheduleKey)) {
           continue;
         }
-
         triedScheduleCombinations.add(scheduleKey);
 
         const totalCourses = currentSchedule.length;
@@ -1107,7 +1074,6 @@ function App() {
           const units = parseFloat(course.creditedUnits || course.units);
           return isNaN(units) ? sum : sum + units;
         }, 0);
-
         const score = totalCourses * 100 + totalUnits;
         const timePrefScore = scoreScheduleByTimePreference(currentSchedule, preferredTimeOfDayOrder);
 
@@ -1131,7 +1097,6 @@ function App() {
           '[generateBestSchedule] Final bestSchedule (length:', bestSchedule.length, ') before applying. Is conflict-free according to isScheduleConflictFree():', isActuallyConflictFree,
           'Courses:', bestSchedule.map(c => ({ id: c.id, subject: c.subject, section: c.section, schedule: c.schedule }))
         );
-
         if (!isActuallyConflictFree) {
           toast.error("The best schedule found still had conflicts. Please try again or adjust filters. No schedule applied.");
           console.error(
@@ -1143,12 +1108,10 @@ function App() {
 
         const uniqueCourseKey = (course) => `${course.id}-${course.subject}-${course.section}`;
         const bestScheduleKeys = new Set(bestSchedule.map(uniqueCourseKey));
-
         setAllCourses(prev => prev.map(course => ({
           ...course,
           isLocked: bestScheduleKeys.has(uniqueCourseKey(course))
         })));
-
         setGeneratedScheduleCount(prev => prev + 1);
         let newScheduleIndex = currentScheduleIndex;
         setGeneratedSchedules(prev => {
@@ -1180,6 +1143,7 @@ function App() {
     }
   }, [generatedSchedules, currentScheduleIndex]);
 
+
   return (
     <>
       <ToastContainer position="top-center" autoClose={4000} hideProgressBar={false} newestOnTop closeOnClick pauseOnFocusLoss draggable pauseOnHover />
@@ -1195,21 +1159,20 @@ function App() {
           </div>
         </div>
       </header>
-
       <div className="App">
         <div className="header-controls">
           <div className="app-controls">
             <button className="theme-toggle-button" onClick={handleToggleTheme}>
               {theme === 'light' ? (
                 <>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
                   </svg>
                   Switch to Dark Mode
                 </>
               ) : (
                 <>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="12" cy="12" r="4"></circle>
                     <path d="M12 2v2"></path>
                     <path d="M12 20v2"></path>
@@ -1229,7 +1192,6 @@ function App() {
               {themePalette[theme] === 'original' ? 'Switch to Comfort Palette' : 'Switch to Original Palette'}
             </button>
           </div>
-
           <div className="auto-schedule-controls">
             <button
               className="generate-schedule-button"
@@ -1243,7 +1205,7 @@ function App() {
                 </>
               ) : (
                 <>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path>
                     <path d="m9 12 2 2 4-4"></path>
                   </svg>
@@ -1254,7 +1216,7 @@ function App() {
             {generatedSchedules.length > 1 && (
               <>
                 <button onClick={handlePrevSchedule} aria-label="Previous Schedule">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="m15 18-6-6 6-6"></path>
                   </svg>
                   Previous
@@ -1264,7 +1226,7 @@ function App() {
                 </span>
                 <button onClick={handleNextSchedule} aria-label="Next Schedule">
                   Next
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="m9 18 6-6-6-6"></path>
                   </svg>
                 </button>
@@ -1272,7 +1234,7 @@ function App() {
             )}
             {generatedSchedules.length > 0 && (
               <button onClick={handleClearGeneratedSchedules} className="danger-button">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M3 6h18"></path>
                   <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
                   <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
@@ -1294,7 +1256,7 @@ function App() {
                 >
                   {showTimetable ? (
                     <>
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"></path>
                         <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"></path>
                         <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"></path>
@@ -1304,7 +1266,7 @@ function App() {
                     </>
                   ) : (
                     <>
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
                         <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
                       </svg>
@@ -1313,11 +1275,9 @@ function App() {
                   )}
                 </button>
               </div>
-
               {showTimetable && (
                 <TimetableView lockedCourses={lockedCourses} conflictingLockedCourseIds={conflictingLockedCourseIds} />
               )}
-
               {!showTimetable && lockedCoursesCount > 0 && (
                 <div className="timetable-summary">
                   <div className="timetable-totals">
@@ -1499,7 +1459,6 @@ function App() {
               onAddTimeRange={handleAddTimeRange}
               onRemoveTimeRange={handleRemoveTimeRange}
             />
-
             <div className="filter-section">
               <label className="filter-label">Class Types:</label>
               <div className="section-type-filters">
@@ -1508,7 +1467,6 @@ function App() {
                   if (typeId === "AP3") description = "Online Class";
                   if (typeId === "AP4") description = "Face-to-Face";
                   if (typeId === "AP5") description = "Hybrid (F2F & Online)";
-
                   return (
                     <label key={typeId} className="section-type-checkbox">
                       <input
@@ -1525,96 +1483,27 @@ function App() {
           </div>
         </div>
 
-        <div className="section-container">
-          <div className="table-header-controls">
-            <h2>Course List</h2>
-            <div className="grouping-controls">
-              <label>Group by:</label>
-              <select value={groupingKey} onChange={handleGroupingChange}>
-                <option value="none">None</option>
-                <option value="subject">Subject</option>
-                <option value="offeringDept">Department</option>
-              </select>
-            </div>
-            <div className="status-filter-controls" style={{ marginLeft: 16 }}>
-              <span style={{ fontSize: '0.95em', color: '#888', marginRight: 8 }}>
-                Filter:
-              </span>
-              <button
-                className={`status-filter-button ${selectedStatusFilter === 'all' ? 'selected' : ''}`}
-                onClick={() => handleStatusFilterChange('all')}
-              >
-                All Courses
-              </button>
-              <button
-                className={`status-filter-button ${selectedStatusFilter === 'open' ? 'selected' : ''}`}
-                onClick={() => handleStatusFilterChange('open')}
-              >
-                Open Only
-              </button>
-              <button
-                className={`status-filter-button ${selectedStatusFilter === 'closed' ? 'selected' : ''}`}
-                onClick={() => handleStatusFilterChange('closed')}
-              >
-                Closed Only
-              </button>
-              <Tooltip title="This filter affects the courses shown below and those available for schedule generation." arrow placement="top">
-                <InfoOutlinedIcon style={{ color: '#1976d2', marginLeft: 6, fontSize: 18, verticalAlign: 'middle', cursor: 'pointer' }} />
-              </Tooltip>
-            </div>
-            {totalUnits > 0 && (
-              <div className="total-units-display">
-                {totalUnits} units ({uniqueSubjects} subjects) - {lockedCoursesCount} courses
-              </div>
-            )}
-          </div>
-
-          {conflictingLockedCourseIds.size > 0 && (
-            <div className="conflict-helper-text">
-              Note: Courses highlighted with a red border have schedule conflicts with other locked courses.
-            </div>
-          )}
-
-          <CourseTable
-            courses={processedCourses}
-            groupingKey={groupingKey}
-            onDeleteCourse={handleDeleteCourse}
-            onToggleLockCourse={handleToggleLockCourse}
-            conflictingLockedCourseIds={conflictingLockedCourseIds}
-          />
-
-          <div className="table-action-controls">
-            <button onClick={handleClearAllLocks}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
-                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-              </svg>
-              Clear All Locks
-            </button>
-            <button className="danger-button" onClick={handleDeleteAllCourses}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 6h18"></path>
-                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-                <path d="M10 11v6"></path>
-                <path d="M14 11v6"></path>
-              </svg>
-              Delete All Courses
-            </button>
-          </div>
-
-          <div>
-            <span>Showing {displayedCount} courses</span>
-            {displayedCount !== allCourses.length && (
-              <span> (filtered from {allCourses.length} total)</span>
-            )}
-          </div>
-        </div>
+        <CourseTable
+          courses={processedCourses}
+          allCoursesCount={allCourses.length}
+          groupingKey={groupingKey}
+          onGroupingChange={handleGroupingChange}
+          selectedStatusFilter={selectedStatusFilter}
+          onStatusFilterChange={handleStatusFilterChange}
+          onDeleteCourse={handleDeleteCourse}
+          onToggleLockCourse={handleToggleLockCourse}
+          conflictingLockedCourseIds={conflictingLockedCourseIds}
+          onClearAllLocks={handleClearAllLocks}
+          onDeleteAllCourses={handleDeleteAllCourses}
+          totalUnitsDisplay={totalUnits}
+          uniqueSubjectsDisplay={uniqueSubjects}
+          lockedCoursesCountDisplay={lockedCoursesCount}
+        />
 
         <div className="section-container">
           <h2>Import Data</h2>
           <p>
-            Need help? Check out the <a href="https://github.com/MasuRii/CITUCourseBuilder/blob/main/UsageGuide.md#usage-guide" target="_blank" rel="noopener noreferrer">Usage Guide</a> for instructions on how to import data.
+            Need help? Check out the <a href="https://github.com/joshjcarrier/course-scheduler-web/blob/main/UsageGuide.md" target="_blank" rel="noopener noreferrer">Usage Guide</a> for instructions on how to get your course data.
           </p>
           <RawDataInput
             value={rawData}
@@ -1623,7 +1512,6 @@ function App() {
           />
         </div>
       </div>
-
       <ConfirmDialog
         open={confirmDialog.open}
         title={confirmDialog.title}
