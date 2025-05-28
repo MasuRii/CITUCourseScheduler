@@ -5,7 +5,7 @@ import MenuItem from '@mui/material/MenuItem';
 import Tooltip from '@mui/material/Tooltip';
 import { toPng } from 'html-to-image';
 import jsPDF from 'jspdf';
-import React, { useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import { parseSchedule } from '../utils/parseSchedule';
 
@@ -234,19 +234,47 @@ function TimetableView({ lockedCourses, conflictingLockedCourseIds = new Set() }
                         aria-label="Export timetable options"
                         onClick={handleMenuOpen}
                         size="small"
+                        sx={{
+                            color: 'var(--text-color)',
+                            '&:hover': {
+                                backgroundColor: 'var(--hover-color)'
+                            }
+                        }}
                     >
-                        <MenuIcon />
+                        <MenuIcon sx={{ color: 'var(--text-color)' }} />
                     </IconButton>
                 </Tooltip>
                 <Menu
                     anchorEl={anchorEl}
                     open={Boolean(anchorEl)}
                     onClose={handleMenuClose}
+                    PaperProps={{
+                        sx: {
+                            backgroundColor: 'var(--bg-color)',
+                            color: 'var(--text-color)'
+                        }
+                    }}
                 >
-                    <MenuItem onClick={handleExportAsPng}>
+                    <MenuItem
+                        onClick={handleExportAsPng}
+                        sx={{
+                            color: 'var(--text-color)',
+                            '&:hover': {
+                                backgroundColor: 'var(--hover-color)'
+                            }
+                        }}
+                    >
                         Export Timetable as PNG
                     </MenuItem>
-                    <MenuItem onClick={handleExportAsPdf}>
+                    <MenuItem
+                        onClick={handleExportAsPdf}
+                        sx={{
+                            color: 'var(--text-color)',
+                            '&:hover': {
+                                backgroundColor: 'var(--hover-color)'
+                            }
+                        }}
+                    >
                         Export Timetable as PDF
                     </MenuItem>
                 </Menu>
