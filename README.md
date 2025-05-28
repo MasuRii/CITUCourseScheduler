@@ -23,8 +23,6 @@ A modern web application designed to assist Cebu Institute of Technology - Unive
 - [Usage](#usage)
 - [Contributing](#contributing)
 - [License](#license)
-- [Contact](#contact)
-- [Acknowledgements](#acknowledgements)
 
 ---
 
