@@ -1,14 +1,36 @@
-# CITU Course Builder
+<p align="center">
+  <a href="https://github.com/MasuRii/CITUCourseBuilder">
+    <img src="course-scheduler-web/src/assets/logo_icon_light.svg" alt="CITU Course Builder Logo" width="100" height="100">
+  </a>
+</p>
+
+<h1 align="center">CITU Course Builder</h1>
+
+<p align="center">
+  <i>Plan, Filter, and Optimize Your Class Schedules with Ease!</i>
+</p>
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![GitHub issues](https://img.shields.io/github/issues/MasuRii/CITUCourseBuilder)](https://github.com/MasuRii/CITUCourseBuilder/issues)
 [![GitHub stars](https://img.shields.io/github/stars/MasuRii/CITUCourseBuilder)](https://github.com/MasuRii/CITUCourseBuilder/stargazers)
-<!-- Optional: Add build status, PRs welcome, etc. -->
 
-A modern web application designed to assist Cebu Institute of Technology - University (CIT-U) students, and potentially students from other institutions, in efficiently planning, filtering, and optimizing their academic class schedules. It simplifies the often complex and manual process of creating a conflict-free and preferred timetable.
+A modern web application designed to assist Cebu Institute of Technology - University (CIT-U) students, in efficiently planning, filtering, and optimizing their academic class schedules. It simplifies the often complex and manual process of creating a conflict-free and preferred timetable.
 
-<!-- **Highly Recommended: Add a screenshot or GIF of the application in action here!** -->
-<!-- e.g., <p align="center"><img src="link_to_your_screenshot.png" width="700"></p> -->
+<p align="center">
+  <img src="course-scheduler-web/src/assets/CIT-U Course Builder_App.png" alt="CIT-U Course Builder Application Screenshot" width="700">
+</p>
+<!-- Note: The above screenshot is very tall (original dimensions 1920x5761). 
+     For a better README viewing experience, you might consider:
+     1. Creating a more focused screenshot or a series of smaller ones.
+     2. Creating an animated GIF showcasing the application's features.
+     3. Placing this image within a <details> tag to make it initially collapsed, e.g.:
+        <details>
+          <summary>Click to view Full Application Screenshot</summary>
+          <p align="center">
+            <img src="course-scheduler-web/src/assets/CIT-U Course Builder_App.png" alt="CIT-U Course Builder Application Screenshot" width="700">
+          </p>
+        </details>
+-->
 
 ---
 
