@@ -162,7 +162,12 @@ function CourseTable({
             <InfoOutlinedIcon style={{ color: '#1976d2', marginLeft: 6, fontSize: 18, verticalAlign: 'middle', cursor: 'pointer' }} />
           </Tooltip>
         </div>
-        <div className="table-controls" style={{ marginLeft: 'auto' }}>
+        {totalUnitsDisplay > 0 && (
+          <div className="total-units-display">
+            {totalUnitsDisplay} units ({uniqueSubjectsDisplay} subjects) - {lockedCoursesCountDisplay} courses
+          </div>
+        )}
+        <div className="table-controls">
           <IconButton
             aria-label="export menu"
             aria-controls="export-menu"
@@ -182,11 +187,6 @@ function CourseTable({
             <MenuItem onClick={handleDownloadAsText}>Download Raw Data as .txt</MenuItem>
           </Menu>
         </div>
-        {totalUnitsDisplay > 0 && (
-          <div className="total-units-display">
-            {totalUnitsDisplay} units ({uniqueSubjectsDisplay} subjects) - {lockedCoursesCountDisplay} courses
-          </div>
-        )}
       </div>
 
       {conflictingLockedCourseIds && conflictingLockedCourseIds.size > 0 && (

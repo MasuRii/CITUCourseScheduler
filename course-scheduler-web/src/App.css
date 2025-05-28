@@ -2446,3 +2446,10 @@ a:focus {
   background-color: var(--filter-bg);
   color: var(--text-color);
 }
+
+.table-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-left: var(--space-4);
+}
