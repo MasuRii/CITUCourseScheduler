@@ -876,11 +876,23 @@ function App() {
   };
 
   const handleClearGeneratedSchedules = () => {
-    triedScheduleCombinations.clear();
-    setGeneratedScheduleCount(0);
-    setGeneratedSchedules([]);
-    setCurrentScheduleIndex(0);
-    handleClearAllLocks();
+    setConfirmDialog({
+      open: true,
+      title: 'Reset Schedule & Clear Locks',
+      message: 'Are you sure you want to reset the current schedule and clear all locks? This will remove all generated schedules and unlock all courses.',
+      confirmText: 'Reset & Clear',
+      cancelText: 'Cancel',
+      onConfirm: () => {
+        triedScheduleCombinations.clear();
+        setGeneratedScheduleCount(0);
+        setGeneratedSchedules([]);
+        setCurrentScheduleIndex(0);
+        setAllCourses(prev => prev.map(c => ({ ...c, isLocked: false })));
+        setConfirmDialog(d => ({ ...d, open: false }));
+        toast.success('Schedule reset and all locks cleared!');
+      },
+      onCancel: () => setConfirmDialog(d => ({ ...d, open: false })),
+    });
   };
 
 
