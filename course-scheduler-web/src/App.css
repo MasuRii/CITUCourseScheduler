@@ -2453,3 +2453,28 @@ a:focus {
   gap: var(--space-4);
   margin-left: var(--space-4);
 }
+
+.course-table-scroll-wrapper {
+  max-height: 100vh;
+  overflow-y: auto;
+  position: relative;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  margin-top: 1rem;
+}
+
+.course-table {
+  width: 100%;
+}
+
+.course-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background-color: var(--bg-color-offset, var(--bg-color));
+  border-bottom: 2px solid var(--border-color-strong, var(--border-color));
+}
+
+.course-table .actions-header {
+  padding-right: 16px;
+}

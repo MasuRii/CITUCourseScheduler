@@ -195,104 +195,106 @@ function CourseTable({
         </div>
       )}
 
-      <table className="course-table">
-        <thead className="course-table-header">
-          <tr>
-            <th className="header-cell">Subject</th>
-            <th className="header-cell">Title</th>
-            <th className="header-cell">Units</th>
-            <th className="header-cell">Section</th>
-            <th className="header-cell">Schedule</th>
-            <th className="header-cell">Room</th>
-            <th className="header-cell">Status</th>
-            <th className="header-cell actions-header">Actions</th>
-          </tr>
-        </thead>
-        <tbody className="course-table-body">
-          {(!courses || (Array.isArray(courses) && courses.length === 0)) && (
-            <tr key="no-data" className="no-data-row">
-              <td className="data-cell" colSpan={8}>No courses to display.</td>
+      <div className="course-table-scroll-wrapper">
+        <table className="course-table">
+          <thead className="course-table-header">
+            <tr>
+              <th className="header-cell">Subject</th>
+              <th className="header-cell">Title</th>
+              <th className="header-cell">Units</th>
+              <th className="header-cell">Section</th>
+              <th className="header-cell">Schedule</th>
+              <th className="header-cell">Room</th>
+              <th className="header-cell">Status</th>
+              <th className="header-cell actions-header">Actions</th>
             </tr>
-          )}
-          {isGrouped && courses.map((group, groupIndex) => (
-            <Fragment key={`group-${group.groupValue}-${groupIndex}`}>
-              <tr key={`header-${group.groupValue}-${groupIndex}`} className="group-header-row">
-                <td className="group-header-cell" colSpan={8}>
-                  {group.groupValue} ({group.courses?.length || 0} {(!group.courses || group.courses.length === 1) ? 'course' : 'courses'})
-                </td>
+          </thead>
+          <tbody className="course-table-body">
+            {(!courses || (Array.isArray(courses) && courses.length === 0)) && (
+              <tr key="no-data" className="no-data-row">
+                <td className="data-cell" colSpan={8}>No courses to display.</td>
               </tr>
-              {group.courses?.map((course, courseIndex) => (
-                <tr key={`course-${course.id}-${courseIndex}`} className={getRowClasses(course, courseIndex, true)}>
-                  <td className="data-cell">{course.subject}</td>
-                  <td className="data-cell">{course.subjectTitle}</td>
-                  <td className="data-cell">{course.creditedUnits || course.units}</td>
-                  <td className="data-cell">{course.section}</td>
-                  <td className="data-cell">{course.schedule}</td>
-                  <td className="data-cell">{course.room}</td>
-                  <td className="data-cell">
-                    {course.isClosed ?
-                      <span className="status-badge closed">Closed</span> :
-                      <span className="status-badge open">Open</span>}
-                  </td>
-                  <td className="data-cell actions-cell">
-                    <button
-                      onClick={() => onToggleLockCourse({ id: course.id, subject: course.subject, section: course.section })}
-                      className={`lock-button ${course.isLocked ? 'locked' : 'unlocked'}`}
-                      title={course.isLocked ? 'Unlock Course' : 'Lock Course'}
-                    >
-                      {course.isLocked && conflictingLockedCourseIds && conflictingLockedCourseIds.has(course.id) && (
-                        <span className="conflict-icon" title="Schedule conflict with another locked course" aria-label="Schedule conflict">⚠️</span>
-                      )}
-                      {course.isLocked ? 'Unlock' : 'Lock'}
-                    </button>
-                    <button
-                      onClick={() => onDeleteCourse({ id: course.id, subject: course.subject, section: course.section })}
-                      className="delete-button"
-                      title="Delete Course"
-                    >
-                      ✕
-                    </button>
+            )}
+            {isGrouped && courses.map((group, groupIndex) => (
+              <Fragment key={`group-${group.groupValue}-${groupIndex}`}>
+                <tr key={`header-${group.groupValue}-${groupIndex}`} className="group-header-row">
+                  <td className="group-header-cell" colSpan={8}>
+                    {group.groupValue} ({group.courses?.length || 0} {(!group.courses || group.courses.length === 1) ? 'course' : 'courses'})
                   </td>
                 </tr>
-              ))}
-            </Fragment>
-          ))}
-          {!isGrouped && Array.isArray(courses) && courses.map((course, index) => (
-            <tr key={`course-${course.id}-${index}`} className={getRowClasses(course, index, false)}>
-              <td className="data-cell">{course.subject}</td>
-              <td className="data-cell">{course.subjectTitle}</td>
-              <td className="data-cell">{course.creditedUnits || course.units}</td>
-              <td className="data-cell">{course.section}</td>
-              <td className="data-cell">{course.schedule}</td>
-              <td className="data-cell">{course.room}</td>
-              <td className="data-cell">
-                {course.isClosed ?
-                  <span className="status-badge closed">Closed</span> :
-                  <span className="status-badge open">Open</span>}
-              </td>
-              <td className="data-cell actions-cell">
-                <button
-                  onClick={() => onToggleLockCourse({ id: course.id, subject: course.subject, section: course.section })}
-                  className={`lock-button ${course.isLocked ? 'locked' : 'unlocked'}`}
-                  title={course.isLocked ? 'Unlock Course' : 'Lock Course'}
-                >
-                  {course.isLocked && conflictingLockedCourseIds && conflictingLockedCourseIds.has(course.id) && (
-                    <span className="conflict-icon" title="Schedule conflict with another locked course" aria-label="Schedule conflict">⚠️</span>
-                  )}
-                  {course.isLocked ? 'Unlock' : 'Lock'}
-                </button>
-                <button
-                  onClick={() => onDeleteCourse({ id: course.id, subject: course.subject, section: course.section })}
-                  className="delete-button"
-                  title="Delete Course"
-                >
-                  ✕
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                {group.courses?.map((course, courseIndex) => (
+                  <tr key={`course-${course.id}-${courseIndex}`} className={getRowClasses(course, courseIndex, true)}>
+                    <td className="data-cell">{course.subject}</td>
+                    <td className="data-cell">{course.subjectTitle}</td>
+                    <td className="data-cell">{course.creditedUnits || course.units}</td>
+                    <td className="data-cell">{course.section}</td>
+                    <td className="data-cell">{course.schedule}</td>
+                    <td className="data-cell">{course.room}</td>
+                    <td className="data-cell">
+                      {course.isClosed ?
+                        <span className="status-badge closed">Closed</span> :
+                        <span className="status-badge open">Open</span>}
+                    </td>
+                    <td className="data-cell actions-cell">
+                      <button
+                        onClick={() => onToggleLockCourse({ id: course.id, subject: course.subject, section: course.section })}
+                        className={`lock-button ${course.isLocked ? 'locked' : 'unlocked'}`}
+                        title={course.isLocked ? 'Unlock Course' : 'Lock Course'}
+                      >
+                        {course.isLocked && conflictingLockedCourseIds && conflictingLockedCourseIds.has(course.id) && (
+                          <span className="conflict-icon" title="Schedule conflict with another locked course" aria-label="Schedule conflict">⚠️</span>
+                        )}
+                        {course.isLocked ? 'Unlock' : 'Lock'}
+                      </button>
+                      <button
+                        onClick={() => onDeleteCourse({ id: course.id, subject: course.subject, section: course.section })}
+                        className="delete-button"
+                        title="Delete Course"
+                      >
+                        ✕
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </Fragment>
+            ))}
+            {!isGrouped && Array.isArray(courses) && courses.map((course, index) => (
+              <tr key={`course-${course.id}-${index}`} className={getRowClasses(course, index, false)}>
+                <td className="data-cell">{course.subject}</td>
+                <td className="data-cell">{course.subjectTitle}</td>
+                <td className="data-cell">{course.creditedUnits || course.units}</td>
+                <td className="data-cell">{course.section}</td>
+                <td className="data-cell">{course.schedule}</td>
+                <td className="data-cell">{course.room}</td>
+                <td className="data-cell">
+                  {course.isClosed ?
+                    <span className="status-badge closed">Closed</span> :
+                    <span className="status-badge open">Open</span>}
+                </td>
+                <td className="data-cell actions-cell">
+                  <button
+                    onClick={() => onToggleLockCourse({ id: course.id, subject: course.subject, section: course.section })}
+                    className={`lock-button ${course.isLocked ? 'locked' : 'unlocked'}`}
+                    title={course.isLocked ? 'Unlock Course' : 'Lock Course'}
+                  >
+                    {course.isLocked && conflictingLockedCourseIds && conflictingLockedCourseIds.has(course.id) && (
+                      <span className="conflict-icon" title="Schedule conflict with another locked course" aria-label="Schedule conflict">⚠️</span>
+                    )}
+                    {course.isLocked ? 'Unlock' : 'Lock'}
+                  </button>
+                  <button
+                    onClick={() => onDeleteCourse({ id: course.id, subject: course.subject, section: course.section })}
+                    className="delete-button"
+                    title="Delete Course"
+                  >
+                    ✕
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       <div className="table-action-controls">
         <button onClick={onClearAllLocks}>
