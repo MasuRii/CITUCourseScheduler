@@ -951,19 +951,18 @@ function App() {
             isLocked: bestScheduleKeys.has(uniqueCourseKey(course))
           })));
           setGeneratedScheduleCount(prev => prev + 1);
-          let newScheduleIndex = currentScheduleIndex;
           setGeneratedSchedules(prev => {
-            const newSchedule = bestSchedule.map(uniqueCourseKey);
-            const exists = prev.some(sched => sched.length === newSchedule.length && sched.every((id, i) => id === newSchedule[i]));
-            if (!exists) {
-              newScheduleIndex = prev.length;
-              return [...prev, newSchedule];
-            } else {
-              newScheduleIndex = prev.findIndex(sched => sched.length === newSchedule.length && sched.every((id, i) => id === newSchedule[i]));
+            const newScheduleKeysArray = bestSchedule.map(uniqueCourseKey);
+            const existingIdx = prev.findIndex(sched => sched.length === newScheduleKeysArray.length && sched.every((id, i) => id === newScheduleKeysArray[i]));
+
+            if (existingIdx === -1) { // New schedule
+              setCurrentScheduleIndex(prev.length);
+              return [...prev, newScheduleKeysArray];
+            } else { // Existing schedule
+              setCurrentScheduleIndex(existingIdx);
               return prev;
             }
           });
-          setCurrentScheduleIndex(newScheduleIndex);
           toast.success(`Generated schedule #${generatedScheduleCount + 1} with ${bestSchedule.length} courses (${bestScore - bestSchedule.length * 100} units)`);
         } else {
           toast.error("Couldn't generate a valid schedule with current filters");
@@ -981,19 +980,18 @@ function App() {
             isLocked: bestScheduleKeys.has(uniqueCourseKey(course))
           })));
           setGeneratedScheduleCount(prev => prev + 1);
-          let newScheduleIndex = currentScheduleIndex;
           setGeneratedSchedules(prev => {
-            const newSchedule = bestPartial.map(uniqueCourseKey);
-            const exists = prev.some(sched => sched.length === newSchedule.length && sched.every((id, i) => id === newSchedule[i]));
-            if (!exists) {
-              newScheduleIndex = prev.length;
-              return [...prev, newSchedule];
-            } else {
-              newScheduleIndex = prev.findIndex(sched => sched.length === newSchedule.length && sched.every((id, i) => id === newSchedule[i]));
+            const newScheduleKeysArray = bestPartial.map(uniqueCourseKey);
+            const existingIdx = prev.findIndex(sched => sched.length === newScheduleKeysArray.length && sched.every((id, i) => id === newScheduleKeysArray[i]));
+
+            if (existingIdx === -1) { // New schedule
+              setCurrentScheduleIndex(prev.length);
+              return [...prev, newScheduleKeysArray];
+            } else { // Existing schedule
+              setCurrentScheduleIndex(existingIdx);
               return prev;
             }
           });
-          setCurrentScheduleIndex(newScheduleIndex);
           toast.success(`Generated schedule #${generatedScheduleCount + 1} with ${bestPartial.length} courses (${bestPartial.reduce((sum, c) => sum + (parseFloat(c.creditedUnits || c.units) || 0), 0)} units, ${new Set(bestPartial.map(c => c.subject)).size} subjects)`);
         } else {
           toast.error("Couldn't generate a valid partial schedule with current filters");
@@ -1113,19 +1111,18 @@ function App() {
           isLocked: bestScheduleKeys.has(uniqueCourseKey(course))
         })));
         setGeneratedScheduleCount(prev => prev + 1);
-        let newScheduleIndex = currentScheduleIndex;
         setGeneratedSchedules(prev => {
-          const newSchedule = bestSchedule.map(uniqueCourseKey);
-          const exists = prev.some(sched => sched.length === newSchedule.length && sched.every((id, i) => id === newSchedule[i]));
-          if (!exists) {
-            newScheduleIndex = prev.length;
-            return [...prev, newSchedule];
-          } else {
-            newScheduleIndex = prev.findIndex(sched => sched.length === newSchedule.length && sched.every((id, i) => id === newSchedule[i]));
+          const newScheduleKeysArray = bestSchedule.map(uniqueCourseKey);
+          const existingIdx = prev.findIndex(sched => sched.length === newScheduleKeysArray.length && sched.every((id, i) => id === newScheduleKeysArray[i]));
+
+          if (existingIdx === -1) { // New schedule
+            setCurrentScheduleIndex(prev.length);
+            return [...prev, newScheduleKeysArray];
+          } else { // Existing schedule
+            setCurrentScheduleIndex(existingIdx);
             return prev;
           }
         });
-        setCurrentScheduleIndex(newScheduleIndex);
         toast.success(`Generated schedule #${generatedScheduleCount + 1} with ${bestSchedule.length} courses (${bestScore - bestSchedule.length * 100} units)`);
       } else {
         toast.error("Couldn't generate a valid schedule with current filters");
