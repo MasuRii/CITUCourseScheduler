@@ -36,6 +36,7 @@ A modern web application designed to assist Cebu Institute of Technology - Unive
 
 ## Table of Contents
 
+- [Table of Contents](#table-of-contents)
 - [About The Project](#about-the-project)
 - [Key Features](#key-features)
 - [Built With](#built-with)
@@ -195,4 +196,4 @@ Please make sure to update tests as appropriate.
 
 ## License
 
-Distributed under the MIT License. See `LICENSE.txt` for more information.
+Distributed under the MIT License. See `LICENSE` for more information.
