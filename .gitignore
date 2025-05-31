@@ -389,6 +389,9 @@ FodyWeavers.xsd
 # Local History for Visual Studio Code
 .history/
 
+#Private
+memory-bank
+
 # Windows Installer files from build outputs
 *.cab
 *.msi
@@ -398,11 +401,3 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
-
-.cursor
-course-scheduler-web/sample-rawdata.txt
-To-Do.txt
-SampleRawData.txt
-.roo
-memory-bank
-projectBrief.md
