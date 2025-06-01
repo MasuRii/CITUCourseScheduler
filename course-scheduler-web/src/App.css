@@ -323,6 +323,100 @@
   --focus-outline-color: var(--accent);
 }
 
+[data-theme="light"][data-palette="space"] {
+  --bg-color: #ffffff;
+  --text-color: #264653;
+  --text-muted-color: #2a9d8f;
+  --border-color: #e9c46a;
+  --header-bg: #264653;
+  --header-text: #ffffff;
+  --group-header-bg: #2a9d8f;
+  --row-even-bg: #f8f9fa;
+  --row-odd-bg: #ffffff;
+  --row-hover-bg: #e9ecef;
+  --locked-row-bg: #f4a261;
+  --locked-row-text: #ffffff;
+  --button-bg: #2a9d8f;
+  --button-text: #ffffff;
+  --button-hover-bg: #21867a;
+  --button-border: #2a9d8f;
+  --danger-button-bg: #e76f51;
+  --danger-button-text: #ffffff;
+  --danger-button-hover-bg: #d45f41;
+  --danger-button-border: #e76f51;
+  --lock-button-locked-bg: #e9c46a;
+  --lock-button-locked-text: #264653;
+  --lock-button-locked-border: #e9c46a;
+  --lock-button-unlocked-bg: #2a9d8f;
+  --lock-button-unlocked-text: #ffffff;
+  --lock-button-unlocked-border: #2a9d8f;
+  --filter-bg: #ffffff;
+  --filter-border: #e9c46a;
+  --input-bg: #ffffff;
+  --input-text: #264653;
+  --input-border: #e9c46a;
+  --hr-color: #e9c46a;
+  --link-color: #2a9d8f;
+  --box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  --section-bg: #ffffff;
+  --card-bg: #ffffff;
+  --accent: #2a9d8f;
+  --accent-hover: #21867a;
+  --accent-light: rgba(42, 157, 143, 0.2);
+  --accent-very-light: rgba(42, 157, 143, 0.05);
+  --danger: #e76f51;
+  --success: #2a9d8f;
+  --warning: #e9c46a;
+  --focus-outline-color: #2a9d8f;
+}
+
+[data-theme="dark"][data-palette="space"] {
+  --bg-color: #1a1a1a;
+  --text-color: #e9c46a;
+  --text-muted-color: #2a9d8f;
+  --border-color: #f4a261;
+  --header-bg: #264653;
+  --header-text: #ffffff;
+  --group-header-bg: #2a9d8f;
+  --row-even-bg: #2a2a2a;
+  --row-odd-bg: #1a1a1a;
+  --row-hover-bg: #3a3a3a;
+  --locked-row-bg: #e76f51;
+  --locked-row-text: #ffffff;
+  --button-bg: #2a9d8f;
+  --button-text: #ffffff;
+  --button-hover-bg: #21867a;
+  --button-border: #2a9d8f;
+  --danger-button-bg: #e76f51;
+  --danger-button-text: #ffffff;
+  --danger-button-hover-bg: #d45f41;
+  --danger-button-border: #e76f51;
+  --lock-button-locked-bg: #e9c46a;
+  --lock-button-locked-text: #264653;
+  --lock-button-locked-border: #e9c46a;
+  --lock-button-unlocked-bg: #2a9d8f;
+  --lock-button-unlocked-text: #ffffff;
+  --lock-button-unlocked-border: #2a9d8f;
+  --filter-bg: #2a2a2a;
+  --filter-border: #f4a261;
+  --input-bg: #2a2a2a;
+  --input-text: #e9c46a;
+  --input-border: #f4a261;
+  --hr-color: #f4a261;
+  --link-color: #2a9d8f;
+  --box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  --section-bg: #2a2a2a;
+  --card-bg: #2a2a2a;
+  --accent: #2a9d8f;
+  --accent-hover: #21867a;
+  --accent-light: rgba(42, 157, 143, 0.2);
+  --accent-very-light: rgba(42, 157, 143, 0.05);
+  --danger: #e76f51;
+  --success: #2a9d8f;
+  --warning: #e9c46a;
+  --focus-outline-color: #2a9d8f;
+}
+
 body {
   margin: 0;
   font-family: var(--font-family-base);
@@ -655,15 +749,13 @@ button:disabled:hover {
 
 .delete-button:hover {
   color: var(--danger-button-hover-bg);
-  background-color: var(--danger-button-bg);
-  background-opacity: 0.1;
+  background-color: rgba(var(--danger-button-bg), 0.1);
 }
 
 .add-range-button {
   margin-top: var(--space-3);
   padding: var(--space-2) var(--space-4);
   background-color: var(--button-bg);
-  color: var(--link-color);
   border: 1px dashed var(--input-border);
   border-radius: var(--border-radius-md);
   font-size: var(--font-size-sm);
@@ -957,8 +1049,7 @@ input[type="radio"] {
   color: var(--danger);
   margin-bottom: var(--space-4);
   padding: var(--space-3);
-  background-color: var(--danger-button-bg);
-  background-opacity: 0.1;
+  background-color: rgba(var(--danger-button-bg), 0.1);
   border-radius: var(--border-radius-md);
   font-size: var(--font-size-sm);
   border-left: 4px solid var(--danger);
@@ -1651,7 +1742,6 @@ input[type="time"]:focus-visible {
     padding: var(--space-2) var(--space-3);
   }
 
-  .table-header-controls {}
 
   .total-units-display,
   .grouping-controls {
@@ -2294,9 +2384,6 @@ a:focus {
   grid-column-start: 1;
 }
 
-.preferences-filters-grid>.preference-item,
-.preferences-filters-grid>.filter-section,
-.preferences-filters-grid>.time-filter {}
 
 .preferences-filters-grid>.preferred-time-preference-item {
   grid-column-start: 2;

@@ -795,10 +795,12 @@ function App() {
     setThemePalette(prev => {
       const currentTheme = theme;
       const currentPalette = prev[currentTheme];
-      const newPalette = currentPalette === 'original' ? 'comfort' : 'original';
+      const palettes = ['original', 'comfort', 'space'];
+      const currentIndex = palettes.indexOf(currentPalette);
+      const newIndex = (currentIndex + 1) % palettes.length;
       return {
         ...prev,
-        [currentTheme]: newPalette,
+        [currentTheme]: palettes[newIndex],
       };
     });
   };
@@ -967,10 +969,10 @@ function App() {
             const newScheduleKeysArray = bestSchedule.map(uniqueCourseKey);
             const existingIdx = prev.findIndex(sched => sched.length === newScheduleKeysArray.length && sched.every((id, i) => id === newScheduleKeysArray[i]));
 
-            if (existingIdx === -1) { // New schedule
+            if (existingIdx === -1) {
               setCurrentScheduleIndex(prev.length);
               return [...prev, newScheduleKeysArray];
-            } else { // Existing schedule
+            } else {
               setCurrentScheduleIndex(existingIdx);
               return prev;
             }
@@ -996,10 +998,10 @@ function App() {
             const newScheduleKeysArray = bestPartial.map(uniqueCourseKey);
             const existingIdx = prev.findIndex(sched => sched.length === newScheduleKeysArray.length && sched.every((id, i) => id === newScheduleKeysArray[i]));
 
-            if (existingIdx === -1) { // New schedule
+            if (existingIdx === -1) {
               setCurrentScheduleIndex(prev.length);
               return [...prev, newScheduleKeysArray];
-            } else { // Existing schedule
+            } else {
               setCurrentScheduleIndex(existingIdx);
               return prev;
             }
@@ -1127,10 +1129,10 @@ function App() {
           const newScheduleKeysArray = bestSchedule.map(uniqueCourseKey);
           const existingIdx = prev.findIndex(sched => sched.length === newScheduleKeysArray.length && sched.every((id, i) => id === newScheduleKeysArray[i]));
 
-          if (existingIdx === -1) { // New schedule
+          if (existingIdx === -1) {
             setCurrentScheduleIndex(prev.length);
             return [...prev, newScheduleKeysArray];
-          } else { // Existing schedule
+          } else {
             setCurrentScheduleIndex(existingIdx);
             return prev;
           }
@@ -1198,7 +1200,7 @@ function App() {
             </button>
             <button className="palette-toggle-button" onClick={handleTogglePalette}>
               <PaletteOutlinedIcon fontSize="small" />
-              {themePalette[theme] === 'original' ? 'Switch to Comfort Palette' : 'Switch to Original Palette'}
+              {`Switch to ${themePalette[theme] === 'original' ? 'Comfort' : themePalette[theme] === 'comfort' ? 'Space' : 'Original'} Palette`}
             </button>
           </div>
           <div className="auto-schedule-controls">
