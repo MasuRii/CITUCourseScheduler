@@ -269,15 +269,27 @@ function generateExhaustiveBestSchedule(coursesBySubject, preferredTimeOfDayOrde
       const timePrefScore = scoreScheduleByTimePreference(currentSchedule, preferredTimeOfDayOrder);
       const campusDays = minimizeDaysOnCampus ? countCampusDays(currentSchedule) : 0;
 
-      if (
-        score > bestScore ||
-        (score === bestScore && timePrefScore < bestTimePrefScore) ||
-        (score === bestScore && timePrefScore === bestTimePrefScore && minimizeDaysOnCampus && campusDays < bestCampusDays)
-      ) {
-        bestScore = score;
-        bestTimePrefScore = timePrefScore;
-        bestCampusDays = campusDays;
-        bestSchedule = [...currentSchedule];
+      if (minimizeDaysOnCampus) {
+        if (
+          campusDays < bestCampusDays ||
+          (campusDays === bestCampusDays && score > bestScore) ||
+          (campusDays === bestCampusDays && score === bestScore && timePrefScore < bestTimePrefScore)
+        ) {
+          bestCampusDays = campusDays;
+          bestScore = score;
+          bestTimePrefScore = timePrefScore;
+          bestSchedule = [...currentSchedule];
+        }
+      } else {
+        if (
+          score > bestScore ||
+          (score === bestScore && timePrefScore < bestTimePrefScore)
+        ) {
+          bestScore = score;
+          bestTimePrefScore = timePrefScore;
+          bestCampusDays = campusDays;
+          bestSchedule = [...currentSchedule];
+        }
       }
       return;
     }
@@ -424,17 +436,31 @@ function generateBestPartialSchedule_Heuristic(
       const timePrefScore = scoreScheduleByTimePreference(currentSchedule, preferredTimeOfDayOrder);
       const campusDays = minimizeDaysOnCampus ? countCampusDays(currentSchedule) : 0;
 
-      if (
-        numSubjects > bestOverallSubjectsCount ||
-        (numSubjects === bestOverallSubjectsCount && totalUnits > bestOverallUnits) ||
-        (numSubjects === bestOverallSubjectsCount && totalUnits === bestOverallUnits && timePrefScore < bestOverallTimePref) ||
-        (numSubjects === bestOverallSubjectsCount && totalUnits === bestOverallUnits && timePrefScore === bestOverallTimePref && minimizeDaysOnCampus && campusDays < bestOverallCampusDays)
-      ) {
-        bestOverallSchedule = [...currentSchedule];
-        bestOverallSubjectsCount = numSubjects;
-        bestOverallUnits = totalUnits;
-        bestOverallTimePref = timePrefScore;
-        bestOverallCampusDays = campusDays;
+      if (minimizeDaysOnCampus) {
+        if (
+          campusDays < bestOverallCampusDays ||
+          (campusDays === bestOverallCampusDays && numSubjects > bestOverallSubjectsCount) ||
+          (campusDays === bestOverallCampusDays && numSubjects === bestOverallSubjectsCount && totalUnits > bestOverallUnits) ||
+          (campusDays === bestOverallCampusDays && numSubjects === bestOverallSubjectsCount && totalUnits === bestOverallUnits && timePrefScore < bestOverallTimePref)
+        ) {
+          bestOverallCampusDays = campusDays;
+          bestOverallSubjectsCount = numSubjects;
+          bestOverallUnits = totalUnits;
+          bestOverallTimePref = timePrefScore;
+          bestOverallSchedule = [...currentSchedule];
+        }
+      } else {
+        if (
+          numSubjects > bestOverallSubjectsCount ||
+          (numSubjects === bestOverallSubjectsCount && totalUnits > bestOverallUnits) ||
+          (numSubjects === bestOverallSubjectsCount && totalUnits === bestOverallUnits && timePrefScore < bestOverallTimePref)
+        ) {
+          bestOverallSubjectsCount = numSubjects;
+          bestOverallUnits = totalUnits;
+          bestOverallTimePref = timePrefScore;
+          bestOverallCampusDays = campusDays;
+          bestOverallSchedule = [...currentSchedule];
+        }
       }
     }
   }
@@ -469,17 +495,31 @@ function generateBestPartialSchedule(courses, maxUnits, maxGapHours, preferredTi
       const timePrefScore = scoreScheduleByTimePreference(subset, preferredTimeOfDayOrder);
       const campusDays = minimizeDaysOnCampus ? countCampusDays(subset) : 0;
 
-      if (
-        uniqueSubjects > bestSubjects ||
-        (uniqueSubjects === bestSubjects && totalUnits > bestUnits) ||
-        (uniqueSubjects === bestSubjects && totalUnits === bestUnits && timePrefScore < bestTimePref) ||
-        (uniqueSubjects === bestSubjects && totalUnits === bestUnits && timePrefScore === bestTimePref && minimizeDaysOnCampus && campusDays < bestCampusDays)
-      ) {
-        best = [...subset];
-        bestSubjects = uniqueSubjects;
-        bestUnits = totalUnits;
-        bestTimePref = timePrefScore;
-        bestCampusDays = campusDays;
+      if (minimizeDaysOnCampus) {
+        if (
+          campusDays < bestCampusDays ||
+          (campusDays === bestCampusDays && uniqueSubjects > bestSubjects) ||
+          (campusDays === bestCampusDays && uniqueSubjects === bestSubjects && totalUnits > bestUnits) ||
+          (campusDays === bestCampusDays && uniqueSubjects === bestSubjects && totalUnits === bestUnits && timePrefScore < bestTimePref)
+        ) {
+          bestCampusDays = campusDays;
+          bestSubjects = uniqueSubjects;
+          bestUnits = totalUnits;
+          bestTimePref = timePrefScore;
+          best = [...subset];
+        }
+      } else {
+        if (
+          uniqueSubjects > bestSubjects ||
+          (uniqueSubjects === bestSubjects && totalUnits > bestUnits) ||
+          (uniqueSubjects === bestSubjects && totalUnits === bestUnits && timePrefScore < bestTimePref)
+        ) {
+          bestSubjects = uniqueSubjects;
+          bestUnits = totalUnits;
+          bestTimePref = timePrefScore;
+          bestCampusDays = campusDays;
+          best = [...subset];
+        }
       }
     }
     return best;
@@ -1128,15 +1168,27 @@ function App() {
         const timePrefScore = scoreScheduleByTimePreference(currentSchedule, preferredTimeOfDayOrder);
         const campusDays = minimizeDaysOnCampus ? countCampusDays(currentSchedule) : 0;
 
-        if (
-          score > bestScore ||
-          (score === bestScore && timePrefScore < bestTimePrefScore) ||
-          (score === bestScore && timePrefScore === bestTimePrefScore && minimizeDaysOnCampus && campusDays < bestCampusDays)
-        ) {
-          bestScore = score;
-          bestTimePrefScore = timePrefScore;
-          bestCampusDays = campusDays;
-          bestSchedule = currentSchedule;
+        if (minimizeDaysOnCampus) {
+          if (
+            campusDays < bestCampusDays ||
+            (campusDays === bestCampusDays && score > bestScore) ||
+            (campusDays === bestCampusDays && score === bestScore && timePrefScore < bestTimePrefScore)
+          ) {
+            bestCampusDays = campusDays;
+            bestScore = score;
+            bestTimePrefScore = timePrefScore;
+            bestSchedule = currentSchedule;
+          }
+        } else {
+          if (
+            score > bestScore ||
+            (score === bestScore && timePrefScore < bestTimePrefScore)
+          ) {
+            bestScore = score;
+            bestTimePrefScore = timePrefScore;
+            bestCampusDays = campusDays;
+            bestSchedule = currentSchedule;
+          }
         }
 
         if (bestSchedule.length === Object.keys(coursesBySubject).length) {
