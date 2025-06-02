@@ -14,7 +14,7 @@
 [![GitHub issues](https://img.shields.io/github/issues/MasuRii/CITUCourseBuilder)](https://github.com/MasuRii/CITUCourseBuilder/issues)
 [![GitHub stars](https://img.shields.io/github/stars/MasuRii/CITUCourseBuilder)](https://github.com/MasuRii/CITUCourseBuilder/stargazers)
 
-A modern web application designed to assist Cebu Institute of Technology - University (CIT-U) students, in efficiently planning, filtering, and optimizing their academic class schedules. It simplifies the often complex and manual process of creating a conflict-free and preferred timetable.
+A modern web application designed to assist Cebu Institute of Technology - University (CIT-U) students in efficiently planning, filtering, and optimizing their academic class schedules. It simplifies the complex process of creating conflict-free timetables with advanced features like theme/palette management and robust export options.
 
 <p align="center">
   <img src="course-scheduler-web/src/assets/CIT-U Course Builder_App.png" alt="CIT-U Course Builder Application Screenshot" width="700">
@@ -26,9 +26,12 @@ A modern web application designed to assist Cebu Institute of Technology - Unive
      3. Placing this image within a <details> tag to make it initially collapsed, e.g.:
         <details>
           <summary>Click to view Full Application Screenshot</summary>
-          <p align="center">
-            <img src="course-scheduler-web/src/assets/CIT-U Course Builder_App.png" alt="CIT-U Course Builder Application Screenshot" width="700">
-          </p>
+          <details>
+            <summary>Click to view Full Application Screenshot</summary>
+            <p align="center">
+              <img src="course-scheduler-web/src/assets/CIT-U Course Builder_App.png" alt="CIT-U Course Builder Application Screenshot" width="700">
+            </p>
+          </details>
         </details>
 -->
 
@@ -91,9 +94,10 @@ Navigating course enlistment and manually creating a feasible class schedule can
     *   **Course List:** Copy to clipboard or download as `.txt` (tab-separated format for re-import).
     *   **Timetable View:** Export as a PNG image or a PDF document.
 *   **🎨 Modern & Responsive UI/UX:**
-    *   Light and Dark mode themes with instant switching.
-    *   'Original' and 'Comfort' color palettes for enhanced visual experience.
-    *   Built with accessibility and mobile-friendliness in mind.
+    *   Light and Dark mode themes with instant switching and automatic palette pairing
+    *   'Original' and 'Comfort' color palettes with improved text contrast and element visibility
+    *   Palette persistence between sessions for consistent theming
+    *   Built with accessibility and mobile-friendliness in mind
 
 ---
 
@@ -170,8 +174,10 @@ Once the application is running:
 4.  **Lock Courses:** Lock any specific course sections you absolutely need in your schedule. Conflicts with other locked courses will be highlighted.
 5.  **Generate Schedule:** Choose a schedule generation mode ("Recommended," "Full Coverage," or "Quick") and click "Generate Best Schedule." The application will attempt to find an optimal, conflict-free schedule based on your settings.
 6.  **View Timetable:** Locked courses (either manually locked or from a generated schedule) will appear in the weekly timetable.
-7.  **Export:** Use the hamburger menus in the course list and timetable sections to export your course data (as `.txt` or to clipboard) or your timetable view (as PNG or PDF).
-8.  **Customize Theme:** Switch between Light/Dark modes and 'Original'/'Comfort' color palettes to suit your preference.
+7.  **Export:** Use the hamburger menus in the course list and timetable sections to:
+    * Export course data as `.txt` or to clipboard (tab-separated format for re-import)
+    * Export timetable view as high-fidelity PNG or PDF files
+8.  **Customize Theme:** Switch between Light/Dark modes and choose between 'Original'/'Comfort' color palettes. The system remembers your palette choices between sessions.
 
 All your settings, imported courses, and locked courses are automatically saved in your browser's local storage, so you can close the tab and resume later.
 
