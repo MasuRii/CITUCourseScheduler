@@ -7,8 +7,8 @@ import { toPng } from 'html-to-image';
 import jsPDF from 'jspdf';
 import { useRef, useState } from 'react';
 import { toast } from 'react-toastify';
+import { generateIcsContent } from '../utils/generateIcs';
 import { parseSchedule } from '../utils/parseSchedule';
-
 const TIME_SLOTS = [
     '07:00', '07:30', '08:00', '08:30', '09:00', '09:30',
     '10:00', '10:30', '11:00', '11:30', '12:00', '12:30',
@@ -17,10 +17,8 @@ const TIME_SLOTS = [
     '19:00', '19:30', '20:00', '20:30', '21:00', '21:30',
     '22:00'
 ];
-
 const DAYS = ['M', 'T', 'W', 'TH', 'F', 'S', 'SU'];
 const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-
 /**
  * Converts a 24-hour format time string to 12-hour format with AM/PM
  * @param {string} timeStr - Time string in "HH:MM" 24-hour format
@@ -33,7 +31,6 @@ const formatTo12Hour = (timeStr) => {
     const hour12 = hour % 12 || 12;
     return `${hour12}:${minutes} ${ampm}`;
 };
-
 /**
  * Component to display a visual timetable for locked courses
  * 
@@ -44,25 +41,19 @@ const formatTo12Hour = (timeStr) => {
 function TimetableView({ lockedCourses, conflictingLockedCourseIds = new Set() }) {
     const [anchorEl, setAnchorEl] = useState(null);
     const timetableRef = useRef(null);
-
     const handleMenuOpen = (event) => {
         setAnchorEl(event.currentTarget);
     };
-
     const handleMenuClose = () => {
         setAnchorEl(null);
     };
-
     const handleExportAsPng = () => {
         handleMenuClose();
-
         if (!timetableRef.current) {
             toast.error('Could not find timetable element to export');
             return;
         }
-
         toast.info('Exporting timetable as PNG...');
-
         const options = {
             cacheBust: true,
             quality: 1,
@@ -72,7 +63,6 @@ function TimetableView({ lockedCourses, conflictingLockedCourseIds = new Set() }
                 return node.nodeName !== 'SCRIPT';
             }
         };
-
         toPng(timetableRef.current, options)
             .then((dataUrl) => {
                 const link = document.createElement('a');
@@ -86,17 +76,13 @@ function TimetableView({ lockedCourses, conflictingLockedCourseIds = new Set() }
                 toast.error('Failed to export timetable as PNG. Please try again.');
             });
     };
-
     const handleExportAsPdf = async () => {
         handleMenuClose();
-
         if (!timetableRef.current) {
             toast.error('Could not find timetable element to export');
             return;
         }
-
         toast.info('Exporting timetable as PDF...');
-
         try {
             const options = {
                 cacheBust: true,
@@ -107,31 +93,23 @@ function TimetableView({ lockedCourses, conflictingLockedCourseIds = new Set() }
                     return node.nodeName !== 'SCRIPT';
                 }
             };
-
             const dataUrl = await toPng(timetableRef.current, options);
-
             const img = new Image();
             img.src = dataUrl;
-
             await new Promise((resolve) => {
                 img.onload = resolve;
             });
-
             const pdf = new jsPDF({
                 orientation: img.width > img.height ? 'landscape' : 'portrait',
                 unit: 'px',
                 format: [img.width + 40, img.height + 60]
             });
-
             pdf.setFontSize(16);
             pdf.text('CITU Course Schedule', 20, 30);
-
             const now = new Date();
             pdf.setFontSize(10);
             pdf.text(`Generated: ${now.toLocaleDateString()} ${now.toLocaleTimeString()}`, 20, 45);
-
             pdf.addImage(dataUrl, 'PNG', 20, 60, img.width, img.height);
-
             pdf.save('timetable_export.pdf');
             toast.success('Timetable exported as PDF successfully!');
         } catch (error) {
@@ -139,34 +117,48 @@ function TimetableView({ lockedCourses, conflictingLockedCourseIds = new Set() }
             toast.error('Failed to export timetable as PDF. Please try again.');
         }
     };
-
+    const handleExportAsIcs = () => {
+        handleMenuClose();
+        if (!lockedCourses || lockedCourses.length === 0) {
+            toast.warn('No locked courses to export.');
+            return;
+        }
+        toast.info('Generating .ics file...');
+        try {
+            const icsContent = generateIcsContent(lockedCourses);
+            const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.setAttribute('download', 'timetable.ics');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            toast.success('Timetable exported as .ics successfully!');
+        } catch (error) {
+            console.error('Error generating .ics file:', error);
+            toast.error('Failed to export timetable as .ics. Please try again.');
+        }
+    };
     if (!lockedCourses || lockedCourses.length === 0) {
         return <div className="timetable-empty">No locked courses to display in timetable.</div>;
     }
-
     const totalUnits = lockedCourses.reduce((sum, course) => {
         const units = parseFloat(course.creditedUnits || course.units);
         return isNaN(units) ? sum : sum + units;
     }, 0);
-
     const uniqueSubjects = new Set(lockedCourses.map(course => course.subject)).size;
-
     const coursesByTimeAndDay = {};
-
     lockedCourses.forEach(course => {
         const scheduleResult = parseSchedule(course.schedule);
         if (!scheduleResult || scheduleResult.isTBA || !scheduleResult.allTimeSlots || scheduleResult.allTimeSlots.length === 0) {
             return;
         }
-
         scheduleResult.allTimeSlots.forEach(slot => {
             const { days, startTime, endTime, room } = slot;
             if (!startTime || !endTime) return;
-
             days.forEach(day => {
                 for (let i = 0; i < TIME_SLOTS.length; i++) {
                     const timeGridSlot = TIME_SLOTS[i];
-
                     if (timeGridSlot >= startTime && timeGridSlot < endTime) {
                         if (!coursesByTimeAndDay[timeGridSlot]) {
                             coursesByTimeAndDay[timeGridSlot] = {};
@@ -174,13 +166,10 @@ function TimetableView({ lockedCourses, conflictingLockedCourseIds = new Set() }
                         if (!coursesByTimeAndDay[timeGridSlot][day]) {
                             coursesByTimeAndDay[timeGridSlot][day] = [];
                         }
-
                         const isStartOfCourseSlot = timeGridSlot === startTime;
-
                         let courseAlreadyInCellForThisSlot = coursesByTimeAndDay[timeGridSlot][day].find(
                             c => c.id === course.id && c.slotStartTime === startTime
                         );
-
                         if (!courseAlreadyInCellForThisSlot) {
                             coursesByTimeAndDay[timeGridSlot][day].push({
                                 ...course,
@@ -195,15 +184,12 @@ function TimetableView({ lockedCourses, conflictingLockedCourseIds = new Set() }
             });
         });
     });
-
     const renderCourseCell = (coursesInGridCell) => {
         if (!coursesInGridCell || coursesInGridCell.length === 0) return null;
-
         const startCourses = coursesInGridCell.filter(c => c.isStartOfCourseSlot);
         if (startCourses.length === 0) {
             return <div className="timetable-course-continuation"></div>;
         }
-
         return startCourses.map((course, index) => {
             const isConflicting = conflictingLockedCourseIds.has(course.id);
             return (
@@ -224,7 +210,6 @@ function TimetableView({ lockedCourses, conflictingLockedCourseIds = new Set() }
             );
         });
     };
-
     return (
         <div className="timetable-container">
             <div className="timetable-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
@@ -276,6 +261,17 @@ function TimetableView({ lockedCourses, conflictingLockedCourseIds = new Set() }
                         }}
                     >
                         Export Timetable as PDF
+                    </MenuItem>
+                    <MenuItem
+                        onClick={handleExportAsIcs}
+                        sx={{
+                            color: 'var(--text-color)',
+                            '&:hover': {
+                                backgroundColor: 'var(--hover-color)'
+                            }
+                        }}
+                    >
+                        Export Timetable as .ics
                     </MenuItem>
                 </Menu>
             </div>
@@ -350,5 +346,4 @@ function TimetableView({ lockedCourses, conflictingLockedCourseIds = new Set() }
         </div>
     );
 }
-
-export default TimetableView; 
+export default TimetableView;

@@ -11,7 +11,7 @@
 </p>
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-1.10-blue)]()
+[![Version](https://img.shields.io/badge/version-1.11-blue)]()
 [![Status](https://img.shields.io/badge/status-completed-brightgreen)]()
 [![GitHub issues](https://img.shields.io/github/issues/MasuRii/CITUCourseBuilder)](https://github.com/MasuRii/CITUCourseBuilder/issues)
 [![GitHub stars](https://img.shields.io/github/stars/MasuRii/CITUCourseBuilder)](https://github.com/MasuRii/CITUCourseBuilder/stargazers)
@@ -28,12 +28,9 @@ A modern web application that helps students at Cebu Institute of Technology - U
      3. Placing this image within a <details> tag to make it initially collapsed, e.g.:
         <details>
           <summary>Click to view Full Application Screenshot</summary>
-          <details>
-            <summary>Click to view Full Application Screenshot</summary>
-            <p align="center">
-              <img src="course-scheduler-web/src/assets/CIT-U Course Builder_App.png" alt="CIT-U Course Builder Application Screenshot" width="700">
-            </p>
-          </details>
+          <p align="center">
+            <img src="course-scheduler-web/src/assets/CIT-U Course Builder_App.png" alt="CIT-U Course Builder Application Screenshot" width="700">
+          </p>
         </details>
 -->
 
@@ -54,7 +51,7 @@ A modern web application that helps students at Cebu Institute of Technology - U
 
 ## About The Project
 
-Navigating course enlistment and manually creating a feasible class schedule can be a time-consuming and frustrating experience for students. The CITU Course Builder, now completed and stable, alleviates this by providing an intuitive, powerful, and responsive tool. Users can import their available courses, set various preferences and filters, and let the application generate optimal, conflict-free schedules. With local data persistence, students can pick up their planning where they left off. The application includes robust export functionalities for both course lists and timetable views.
+The CITU Course Builder is a completed, stable web application designed to assist students at Cebu Institute of Technology - University (and compatible institutions) in efficiently creating optimal, conflict-free class schedules. It simplifies academic planning by providing smart import/export capabilities, intelligent scheduling algorithms, and a responsive visual interface. The project has achieved all its goals including intuitive scheduling tools, reliable data persistence, and comprehensive export functionality.
 
 
 ## Key Features
@@ -78,6 +75,7 @@ Navigating course enlistment and manually creating a feasible class schedule can
     *   Set maximum total units.
     *   Define maximum allowed break time between classes.
     *   Drag-and-drop preferred time of day order (Morning, Afternoon, Evening, Any).
+    *   Minimize days on campus preference (excluding online classes).
     *   All preferences and filters are saved automatically to `localStorage`.
 *   **🧠 Intelligent Schedule Generation:**
     *   Multiple search modes:
@@ -92,6 +90,7 @@ Navigating course enlistment and manually creating a feasible class schedule can
 *   **📤 Comprehensive Export Options:**
     *   **Course List:** Copy to clipboard or download as `.txt` (tab-separated format for re-import).
     *   **Timetable View:** Export as a PNG image or a PDF document.
+    *   **iCalendar Export:** Generate `.ics` file for easy import to Google Calendar, Outlook, or Apple Calendar.
 *   **🎨 Modern & Responsive UI/UX:**
     *   Light and Dark mode themes with instant switching and automatic palette pairing
     *   'Original' and 'Comfort' color palettes with improved text contrast and element visibility
@@ -173,6 +172,7 @@ Once the application is running:
 7.  **Export:** Use the hamburger menus in the course list and timetable sections to:
     * Export course data as `.txt` or to clipboard (tab-separated format for re-import)
     * Export timetable view as high-fidelity PNG or PDF files
+    * Export timetable as iCalendar (.ics) file for calendar applications
 8.  **Customize Theme:** Switch between Light/Dark modes and choose between 'Original'/'Comfort' color palettes. The system remembers your palette choices between sessions.
 
 All your settings, imported courses, and locked courses are automatically saved in your browser's local storage, so you can close the tab and resume later.
