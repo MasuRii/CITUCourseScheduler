@@ -795,9 +795,10 @@ function App() {
       const palettes = ['original', 'comfort', 'space'];
       const currentIndex = palettes.indexOf(currentPalette);
       const newIndex = (currentIndex + 1) % palettes.length;
+      const newPalette = palettes[newIndex];
       return {
-        ...prev,
-        [currentTheme]: palettes[newIndex],
+        light: newPalette,
+        dark: newPalette,
       };
     });
   };
