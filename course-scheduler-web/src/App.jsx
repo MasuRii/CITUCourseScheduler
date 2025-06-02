@@ -28,6 +28,7 @@ const LOCAL_STORAGE_KEYS = {
   MAX_CLASS_GAP_HOURS: 'courseBuilder_maxClassGapHours',
   PREFERRED_TIME_OF_DAY: 'courseBuilder_preferredTimeOfDay',
   SCHEDULE_SEARCH_MODE: 'courseBuilder_scheduleSearchMode',
+  MINIMIZE_DAYS_ON_CAMPUS: 'courseBuilder_minimizeDaysOnCampus',
 };
 
 const ALLOWED_GROUPING_KEYS = ['none', 'offeringDept', 'subject'];
@@ -52,8 +53,8 @@ const loadFromLocalStorage = (key, defaultValue) => {
     }
     if (key === LOCAL_STORAGE_KEYS.THEME_PALETTE) {
       if (parsed && typeof parsed === 'object' &&
-        ('light' in parsed && ('original' === parsed.light || 'comfort' === parsed.light)) &&
-        ('dark' in parsed && ('original' === parsed.dark || 'comfort' === parsed.dark))) {
+        ('light' in parsed && (['original', 'comfort', 'space'].includes(parsed.light))) &&
+        ('dark' in parsed && (['original', 'comfort', 'space'].includes(parsed.dark)))) {
         return parsed;
       } else {
         return defaultValue;
@@ -89,6 +90,9 @@ const loadFromLocalStorage = (key, defaultValue) => {
     if (key === LOCAL_STORAGE_KEYS.SCHEDULE_SEARCH_MODE) {
       return ALLOWED_SEARCH_MODES.includes(parsed) ? parsed : 'partial';
     }
+    if (key === LOCAL_STORAGE_KEYS.MINIMIZE_DAYS_ON_CAMPUS) {
+      return typeof parsed === 'boolean' ? parsed : defaultValue;
+    }
     return parsed;
   } catch (e) {
     console.error(`Failed to parse ${key} from localStorage:`, e);
@@ -104,6 +108,7 @@ const loadFromLocalStorage = (key, defaultValue) => {
     if (key === LOCAL_STORAGE_KEYS.MAX_CLASS_GAP_HOURS) return '';
     if (key === LOCAL_STORAGE_KEYS.PREFERRED_TIME_OF_DAY) return 'any';
     if (key === LOCAL_STORAGE_KEYS.SCHEDULE_SEARCH_MODE) return 'partial';
+    if (key === LOCAL_STORAGE_KEYS.MINIMIZE_DAYS_ON_CAMPUS) return false;
     return defaultValue;
   }
 };
@@ -223,12 +228,31 @@ function exceedsMaxGap(schedule, maxGapHours) {
   return false;
 }
 
+function countCampusDays(schedule) {
+  const campusDays = new Set();
+  for (const course of schedule) {
+    const parsed = parseSchedule(course.schedule);
+    if (!parsed || parsed.isTBA || !parsed.allTimeSlots) continue;
 
-function generateExhaustiveBestSchedule(coursesBySubject, preferredTimeOfDayOrder, maxUnits, maxGapHours) {
+    for (const slot of parsed.allTimeSlots) {
+      const isOnlineClass = slot.room && slot.room.toLowerCase().includes('online');
+      if (!isOnlineClass) {
+        for (const day of slot.days) {
+          campusDays.add(day);
+        }
+      }
+    }
+  }
+  return campusDays.size;
+}
+
+
+function generateExhaustiveBestSchedule(coursesBySubject, preferredTimeOfDayOrder, maxUnits, maxGapHours, minimizeDaysOnCampus) {
   const subjects = Object.keys(coursesBySubject);
   let bestSchedule = [];
   let bestScore = -1;
   let bestTimePrefScore = Infinity;
+  let bestCampusDays = Infinity;
 
   function backtrack(idx, currentSchedule) {
     if (idx === subjects.length) {
@@ -243,14 +267,29 @@ function generateExhaustiveBestSchedule(coursesBySubject, preferredTimeOfDayOrde
       }, 0);
       const score = totalCourses * 100 + totalUnits;
       const timePrefScore = scoreScheduleByTimePreference(currentSchedule, preferredTimeOfDayOrder);
+      const campusDays = minimizeDaysOnCampus ? countCampusDays(currentSchedule) : 0;
 
-      if (
-        score > bestScore ||
-        (score === bestScore && timePrefScore < bestTimePrefScore)
-      ) {
-        bestScore = score;
-        bestTimePrefScore = timePrefScore;
-        bestSchedule = [...currentSchedule];
+      if (minimizeDaysOnCampus) {
+        if (
+          campusDays < bestCampusDays ||
+          (campusDays === bestCampusDays && score > bestScore) ||
+          (campusDays === bestCampusDays && score === bestScore && timePrefScore < bestTimePrefScore)
+        ) {
+          bestCampusDays = campusDays;
+          bestScore = score;
+          bestTimePrefScore = timePrefScore;
+          bestSchedule = [...currentSchedule];
+        }
+      } else {
+        if (
+          score > bestScore ||
+          (score === bestScore && timePrefScore < bestTimePrefScore)
+        ) {
+          bestScore = score;
+          bestTimePrefScore = timePrefScore;
+          bestCampusDays = campusDays;
+          bestSchedule = [...currentSchedule];
+        }
       }
       return;
     }
@@ -309,12 +348,14 @@ function generateBestPartialSchedule_Heuristic(
   courses,
   maxUnits,
   maxGapHours,
-  preferredTimeOfDayOrder
+  preferredTimeOfDayOrder,
+  minimizeDaysOnCampus
 ) {
   let bestOverallSchedule = [];
   let bestOverallSubjectsCount = 0;
   let bestOverallUnits = 0;
   let bestOverallTimePref = Infinity;
+  let bestOverallCampusDays = Infinity;
 
   const numCourses = courses.length;
   const NUM_ATTEMPTS = Math.min(500, Math.max(50, numCourses * 2));
@@ -393,16 +434,33 @@ function generateBestPartialSchedule_Heuristic(
       const numSubjects = currentSubjectsSet.size;
       const totalUnits = currentSchedule.reduce((sum, c) => sum + (parseFloat(c.creditedUnits || c.units) || 0), 0);
       const timePrefScore = scoreScheduleByTimePreference(currentSchedule, preferredTimeOfDayOrder);
+      const campusDays = minimizeDaysOnCampus ? countCampusDays(currentSchedule) : 0;
 
-      if (
-        numSubjects > bestOverallSubjectsCount ||
-        (numSubjects === bestOverallSubjectsCount && totalUnits > bestOverallUnits) ||
-        (numSubjects === bestOverallSubjectsCount && totalUnits === bestOverallUnits && timePrefScore < bestOverallTimePref)
-      ) {
-        bestOverallSchedule = [...currentSchedule];
-        bestOverallSubjectsCount = numSubjects;
-        bestOverallUnits = totalUnits;
-        bestOverallTimePref = timePrefScore;
+      if (minimizeDaysOnCampus) {
+        if (
+          campusDays < bestOverallCampusDays ||
+          (campusDays === bestOverallCampusDays && numSubjects > bestOverallSubjectsCount) ||
+          (campusDays === bestOverallCampusDays && numSubjects === bestOverallSubjectsCount && totalUnits > bestOverallUnits) ||
+          (campusDays === bestOverallCampusDays && numSubjects === bestOverallSubjectsCount && totalUnits === bestOverallUnits && timePrefScore < bestOverallTimePref)
+        ) {
+          bestOverallCampusDays = campusDays;
+          bestOverallSubjectsCount = numSubjects;
+          bestOverallUnits = totalUnits;
+          bestOverallTimePref = timePrefScore;
+          bestOverallSchedule = [...currentSchedule];
+        }
+      } else {
+        if (
+          numSubjects > bestOverallSubjectsCount ||
+          (numSubjects === bestOverallSubjectsCount && totalUnits > bestOverallUnits) ||
+          (numSubjects === bestOverallSubjectsCount && totalUnits === bestOverallUnits && timePrefScore < bestOverallTimePref)
+        ) {
+          bestOverallSubjectsCount = numSubjects;
+          bestOverallUnits = totalUnits;
+          bestOverallTimePref = timePrefScore;
+          bestOverallCampusDays = campusDays;
+          bestOverallSchedule = [...currentSchedule];
+        }
       }
     }
   }
@@ -410,7 +468,7 @@ function generateBestPartialSchedule_Heuristic(
 }
 
 
-function generateBestPartialSchedule(courses, maxUnits, maxGapHours, preferredTimeOfDayOrder) {
+function generateBestPartialSchedule(courses, maxUnits, maxGapHours, preferredTimeOfDayOrder, minimizeDaysOnCampus) {
   if (!courses || courses.length === 0) return [];
 
   if (courses.length <= SMALL_N_THRESHOLD_PARTIAL) {
@@ -418,6 +476,7 @@ function generateBestPartialSchedule(courses, maxUnits, maxGapHours, preferredTi
     let bestSubjects = 0;
     let bestUnits = 0;
     let bestTimePref = Infinity;
+    let bestCampusDays = Infinity;
 
     const allSubsets = getAllSubsets(courses);
 
@@ -434,16 +493,33 @@ function generateBestPartialSchedule(courses, maxUnits, maxGapHours, preferredTi
       const uniqueSubjects = new Set(subset.map(c => c.subject)).size;
       const totalUnits = subset.reduce((sum, c) => sum + (parseFloat(c.creditedUnits || c.units) || 0), 0);
       const timePrefScore = scoreScheduleByTimePreference(subset, preferredTimeOfDayOrder);
+      const campusDays = minimizeDaysOnCampus ? countCampusDays(subset) : 0;
 
-      if (
-        uniqueSubjects > bestSubjects ||
-        (uniqueSubjects === bestSubjects && totalUnits > bestUnits) ||
-        (uniqueSubjects === bestSubjects && totalUnits === bestUnits && timePrefScore < bestTimePref)
-      ) {
-        best = [...subset];
-        bestSubjects = uniqueSubjects;
-        bestUnits = totalUnits;
-        bestTimePref = timePrefScore;
+      if (minimizeDaysOnCampus) {
+        if (
+          campusDays < bestCampusDays ||
+          (campusDays === bestCampusDays && uniqueSubjects > bestSubjects) ||
+          (campusDays === bestCampusDays && uniqueSubjects === bestSubjects && totalUnits > bestUnits) ||
+          (campusDays === bestCampusDays && uniqueSubjects === bestSubjects && totalUnits === bestUnits && timePrefScore < bestTimePref)
+        ) {
+          bestCampusDays = campusDays;
+          bestSubjects = uniqueSubjects;
+          bestUnits = totalUnits;
+          bestTimePref = timePrefScore;
+          best = [...subset];
+        }
+      } else {
+        if (
+          uniqueSubjects > bestSubjects ||
+          (uniqueSubjects === bestSubjects && totalUnits > bestUnits) ||
+          (uniqueSubjects === bestSubjects && totalUnits === bestUnits && timePrefScore < bestTimePref)
+        ) {
+          bestSubjects = uniqueSubjects;
+          bestUnits = totalUnits;
+          bestTimePref = timePrefScore;
+          bestCampusDays = campusDays;
+          best = [...subset];
+        }
       }
     }
     return best;
@@ -452,7 +528,8 @@ function generateBestPartialSchedule(courses, maxUnits, maxGapHours, preferredTi
       courses,
       maxUnits,
       maxGapHours,
-      preferredTimeOfDayOrder
+      preferredTimeOfDayOrder,
+      minimizeDaysOnCampus
     );
   }
 }
@@ -494,6 +571,7 @@ function App() {
     const saved = loadFromLocalStorage(LOCAL_STORAGE_KEYS.SCHEDULE_SEARCH_MODE, 'partial');
     return ALLOWED_SEARCH_MODES.includes(saved) ? saved : 'partial';
   });
+  const [minimizeDaysOnCampus, setMinimizeDaysOnCampus] = useState(() => loadFromLocalStorage(LOCAL_STORAGE_KEYS.MINIMIZE_DAYS_ON_CAMPUS, false));
 
   const [confirmDialog, setConfirmDialog] = useState({
     open: false,
@@ -546,10 +624,8 @@ function App() {
   useEffect(() => { localStorage.setItem(LOCAL_STORAGE_KEYS.MAX_CLASS_GAP_HOURS, JSON.stringify(maxClassGapHours)); }, [maxClassGapHours]);
   useEffect(() => { localStorage.setItem(LOCAL_STORAGE_KEYS.PREFERRED_TIME_OF_DAY, JSON.stringify(preferredTimeOfDayOrder)); }, [preferredTimeOfDayOrder]);
   useEffect(() => { localStorage.setItem(LOCAL_STORAGE_KEYS.SCHEDULE_SEARCH_MODE, JSON.stringify(scheduleSearchMode)); }, [scheduleSearchMode]);
+  useEffect(() => { localStorage.setItem(LOCAL_STORAGE_KEYS.MINIMIZE_DAYS_ON_CAMPUS, JSON.stringify(minimizeDaysOnCampus)); }, [minimizeDaysOnCampus]);
 
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', 'dark');
-  }, []);
 
   useEffect(() => {
     const filtered = allCourses.filter(course => {
@@ -795,10 +871,13 @@ function App() {
     setThemePalette(prev => {
       const currentTheme = theme;
       const currentPalette = prev[currentTheme];
-      const newPalette = currentPalette === 'original' ? 'comfort' : 'original';
+      const palettes = ['original', 'comfort', 'space'];
+      const currentIndex = palettes.indexOf(currentPalette);
+      const newIndex = (currentIndex + 1) % palettes.length;
+      const newPalette = palettes[newIndex];
       return {
-        ...prev,
-        [currentTheme]: newPalette,
+        light: newPalette,
+        dark: newPalette,
       };
     });
   };
@@ -949,7 +1028,7 @@ function App() {
       }
 
       if (scheduleSearchMode === 'exhaustive') {
-        const { bestSchedule, bestScore } = generateExhaustiveBestSchedule(coursesBySubject, preferredTimeOfDayOrder, maxUnits, maxClassGapHours);
+        const { bestSchedule, bestScore } = generateExhaustiveBestSchedule(coursesBySubject, preferredTimeOfDayOrder, maxUnits, maxClassGapHours, minimizeDaysOnCampus);
         if (bestSchedule.length > 0) {
           const isActuallyConflictFree = isScheduleConflictFree(bestSchedule, parseSchedule, checkTimeOverlap);
           if (!isActuallyConflictFree) {
@@ -967,10 +1046,10 @@ function App() {
             const newScheduleKeysArray = bestSchedule.map(uniqueCourseKey);
             const existingIdx = prev.findIndex(sched => sched.length === newScheduleKeysArray.length && sched.every((id, i) => id === newScheduleKeysArray[i]));
 
-            if (existingIdx === -1) { // New schedule
+            if (existingIdx === -1) {
               setCurrentScheduleIndex(prev.length);
               return [...prev, newScheduleKeysArray];
-            } else { // Existing schedule
+            } else {
               setCurrentScheduleIndex(existingIdx);
               return prev;
             }
@@ -983,7 +1062,7 @@ function App() {
       }
 
       if (scheduleSearchMode === 'partial') {
-        const bestPartial = generateBestPartialSchedule(filteredCourses, maxUnits, maxClassGapHours, preferredTimeOfDayOrder);
+        const bestPartial = generateBestPartialSchedule(filteredCourses, maxUnits, maxClassGapHours, preferredTimeOfDayOrder, minimizeDaysOnCampus);
         if (bestPartial.length > 0) {
           const uniqueCourseKey = (course) => `${course.id}-${course.subject}-${course.section}`;
           const bestScheduleKeys = new Set(bestPartial.map(uniqueCourseKey));
@@ -996,10 +1075,10 @@ function App() {
             const newScheduleKeysArray = bestPartial.map(uniqueCourseKey);
             const existingIdx = prev.findIndex(sched => sched.length === newScheduleKeysArray.length && sched.every((id, i) => id === newScheduleKeysArray[i]));
 
-            if (existingIdx === -1) { // New schedule
+            if (existingIdx === -1) {
               setCurrentScheduleIndex(prev.length);
               return [...prev, newScheduleKeysArray];
-            } else { // Existing schedule
+            } else {
               setCurrentScheduleIndex(existingIdx);
               return prev;
             }
@@ -1019,6 +1098,7 @@ function App() {
       let bestSchedule = [];
       let bestScore = -1;
       let bestTimePrefScore = Infinity;
+      let bestCampusDays = Infinity;
       let maxAttempts = 1000;
       let attempts = 0;
 
@@ -1086,14 +1166,29 @@ function App() {
         }, 0);
         const score = totalCourses * 100 + totalUnits;
         const timePrefScore = scoreScheduleByTimePreference(currentSchedule, preferredTimeOfDayOrder);
+        const campusDays = minimizeDaysOnCampus ? countCampusDays(currentSchedule) : 0;
 
-        if (
-          score > bestScore ||
-          (score === bestScore && timePrefScore < bestTimePrefScore)
-        ) {
-          bestScore = score;
-          bestTimePrefScore = timePrefScore;
-          bestSchedule = currentSchedule;
+        if (minimizeDaysOnCampus) {
+          if (
+            campusDays < bestCampusDays ||
+            (campusDays === bestCampusDays && score > bestScore) ||
+            (campusDays === bestCampusDays && score === bestScore && timePrefScore < bestTimePrefScore)
+          ) {
+            bestCampusDays = campusDays;
+            bestScore = score;
+            bestTimePrefScore = timePrefScore;
+            bestSchedule = currentSchedule;
+          }
+        } else {
+          if (
+            score > bestScore ||
+            (score === bestScore && timePrefScore < bestTimePrefScore)
+          ) {
+            bestScore = score;
+            bestTimePrefScore = timePrefScore;
+            bestCampusDays = campusDays;
+            bestSchedule = currentSchedule;
+          }
         }
 
         if (bestSchedule.length === Object.keys(coursesBySubject).length) {
@@ -1127,10 +1222,10 @@ function App() {
           const newScheduleKeysArray = bestSchedule.map(uniqueCourseKey);
           const existingIdx = prev.findIndex(sched => sched.length === newScheduleKeysArray.length && sched.every((id, i) => id === newScheduleKeysArray[i]));
 
-          if (existingIdx === -1) { // New schedule
+          if (existingIdx === -1) {
             setCurrentScheduleIndex(prev.length);
             return [...prev, newScheduleKeysArray];
-          } else { // Existing schedule
+          } else {
             setCurrentScheduleIndex(existingIdx);
             return prev;
           }
@@ -1198,7 +1293,7 @@ function App() {
             </button>
             <button className="palette-toggle-button" onClick={handleTogglePalette}>
               <PaletteOutlinedIcon fontSize="small" />
-              {themePalette[theme] === 'original' ? 'Switch to Comfort Palette' : 'Switch to Original Palette'}
+              {`Switch to ${themePalette[theme] === 'original' ? 'Comfort' : themePalette[theme] === 'comfort' ? 'Space' : 'Original'} Palette`}
             </button>
           </div>
           <div className="auto-schedule-controls">
@@ -1389,6 +1484,29 @@ function App() {
                     return <option key={value} value={value}>{label}</option>;
                   })}
                 </select>
+              </div>
+              <div className="preference-item">
+                <label htmlFor="minimizeDaysOnCampus" className="filter-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5em' }}>
+                  <input
+                    type="checkbox"
+                    id="minimizeDaysOnCampus"
+                    checked={minimizeDaysOnCampus}
+                    onChange={(e) => setMinimizeDaysOnCampus(e.target.checked)}
+                  />
+                  <span>Try to minimize days on campus</span>
+                  <Tooltip
+                    title={
+                      <span style={{ whiteSpace: 'pre-line' }}>
+                        {'When checked, the scheduler will prioritize schedules that consolidate classes into fewer unique days.\n'}
+                        {'Online classes (AP3 and AP5 with "online" in room) do not count as campus days.'}
+                      </span>
+                    }
+                    arrow
+                    placement="right"
+                  >
+                    <InfoOutlinedIcon style={{ color: '#1976d2', cursor: 'pointer', fontSize: 20 }} />
+                  </Tooltip>
+                </label>
               </div>
             </div>
             <div className="preference-item preferred-time-preference-item">

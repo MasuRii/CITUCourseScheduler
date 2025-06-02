@@ -11,10 +11,12 @@
 </p>
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Version](https://img.shields.io/badge/version-1.10-blue)]()
+[![Status](https://img.shields.io/badge/status-completed-brightgreen)]()
 [![GitHub issues](https://img.shields.io/github/issues/MasuRii/CITUCourseBuilder)](https://github.com/MasuRii/CITUCourseBuilder/issues)
 [![GitHub stars](https://img.shields.io/github/stars/MasuRii/CITUCourseBuilder)](https://github.com/MasuRii/CITUCourseBuilder/stargazers)
 
-A modern web application designed to assist Cebu Institute of Technology - University (CIT-U) students, in efficiently planning, filtering, and optimizing their academic class schedules. It simplifies the often complex and manual process of creating a conflict-free and preferred timetable.
+A modern web application that helps students at Cebu Institute of Technology - University (CIT-U) efficiently create optimal, conflict-free class schedules. It simplifies academic planning by providing smart import/export capabilities, intelligent scheduling algorithms, and a responsive visual interface.
 
 <p align="center">
   <img src="course-scheduler-web/src/assets/CIT-U Course Builder_App.png" alt="CIT-U Course Builder Application Screenshot" width="700">
@@ -26,13 +28,15 @@ A modern web application designed to assist Cebu Institute of Technology - Unive
      3. Placing this image within a <details> tag to make it initially collapsed, e.g.:
         <details>
           <summary>Click to view Full Application Screenshot</summary>
-          <p align="center">
-            <img src="course-scheduler-web/src/assets/CIT-U Course Builder_App.png" alt="CIT-U Course Builder Application Screenshot" width="700">
-          </p>
+          <details>
+            <summary>Click to view Full Application Screenshot</summary>
+            <p align="center">
+              <img src="course-scheduler-web/src/assets/CIT-U Course Builder_App.png" alt="CIT-U Course Builder Application Screenshot" width="700">
+            </p>
+          </details>
         </details>
 -->
 
----
 
 ## Table of Contents
 
@@ -47,13 +51,11 @@ A modern web application designed to assist Cebu Institute of Technology - Unive
 - [Contributing](#contributing)
 - [License](#license)
 
----
 
 ## About The Project
 
-Navigating course enlistment and manually creating a feasible class schedule can be a time-consuming and frustrating experience for students. The CITU Course Builder aims to alleviate this by providing an intuitive, powerful, and responsive tool. Users can import their available courses, set various preferences and filters, and let the application generate optimal, conflict-free schedules. With local data persistence, students can pick up their planning where they left off. Recent enhancements include robust export functionalities for both course lists and timetable views.
+Navigating course enlistment and manually creating a feasible class schedule can be a time-consuming and frustrating experience for students. The CITU Course Builder, now completed and stable, alleviates this by providing an intuitive, powerful, and responsive tool. Users can import their available courses, set various preferences and filters, and let the application generate optimal, conflict-free schedules. With local data persistence, students can pick up their planning where they left off. The application includes robust export functionalities for both course lists and timetable views.
 
----
 
 ## Key Features
 
@@ -91,11 +93,10 @@ Navigating course enlistment and manually creating a feasible class schedule can
     *   **Course List:** Copy to clipboard or download as `.txt` (tab-separated format for re-import).
     *   **Timetable View:** Export as a PNG image or a PDF document.
 *   **🎨 Modern & Responsive UI/UX:**
-    *   Light and Dark mode themes with instant switching.
-    *   'Original' and 'Comfort' color palettes for enhanced visual experience.
-    *   Built with accessibility and mobile-friendliness in mind.
-
----
+    *   Light and Dark mode themes with instant switching and automatic palette pairing
+    *   'Original' and 'Comfort' color palettes with improved text contrast and element visibility
+    *   Palette persistence between sessions for consistent theming
+    *   Built with accessibility and mobile-friendliness in mind
 
 ## Built With
 
@@ -158,7 +159,6 @@ Ensure you have Node.js and npm (or yarn) installed on your system.
     ```
 The application will typically be available at `http://localhost:12000`.
 
----
 
 ## Usage
 
@@ -170,12 +170,13 @@ Once the application is running:
 4.  **Lock Courses:** Lock any specific course sections you absolutely need in your schedule. Conflicts with other locked courses will be highlighted.
 5.  **Generate Schedule:** Choose a schedule generation mode ("Recommended," "Full Coverage," or "Quick") and click "Generate Best Schedule." The application will attempt to find an optimal, conflict-free schedule based on your settings.
 6.  **View Timetable:** Locked courses (either manually locked or from a generated schedule) will appear in the weekly timetable.
-7.  **Export:** Use the hamburger menus in the course list and timetable sections to export your course data (as `.txt` or to clipboard) or your timetable view (as PNG or PDF).
-8.  **Customize Theme:** Switch between Light/Dark modes and 'Original'/'Comfort' color palettes to suit your preference.
+7.  **Export:** Use the hamburger menus in the course list and timetable sections to:
+    * Export course data as `.txt` or to clipboard (tab-separated format for re-import)
+    * Export timetable view as high-fidelity PNG or PDF files
+8.  **Customize Theme:** Switch between Light/Dark modes and choose between 'Original'/'Comfort' color palettes. The system remembers your palette choices between sessions.
 
 All your settings, imported courses, and locked courses are automatically saved in your browser's local storage, so you can close the tab and resume later.
 
----
 
 ## Contributing
 
@@ -191,8 +192,6 @@ Don't forget to give the project a star! Thanks again!
 5.  Open a Pull Request
 
 Please make sure to update tests as appropriate.
-
----
 
 ## License
 
