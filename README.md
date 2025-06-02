@@ -11,10 +11,12 @@
 </p>
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Version](https://img.shields.io/badge/version-1.10-blue)]()
+[![Status](https://img.shields.io/badge/status-completed-brightgreen)]()
 [![GitHub issues](https://img.shields.io/github/issues/MasuRii/CITUCourseBuilder)](https://github.com/MasuRii/CITUCourseBuilder/issues)
 [![GitHub stars](https://img.shields.io/github/stars/MasuRii/CITUCourseBuilder)](https://github.com/MasuRii/CITUCourseBuilder/stargazers)
 
-A modern web application designed to assist Cebu Institute of Technology - University (CIT-U) students in efficiently planning, filtering, and optimizing their academic class schedules. It simplifies the complex process of creating conflict-free timetables with advanced features like theme/palette management and robust export options.
+A modern web application that helps students at Cebu Institute of Technology - University (CIT-U) efficiently create optimal, conflict-free class schedules. It simplifies academic planning by providing smart import/export capabilities, intelligent scheduling algorithms, and a responsive visual interface.
 
 <p align="center">
   <img src="course-scheduler-web/src/assets/CIT-U Course Builder_App.png" alt="CIT-U Course Builder Application Screenshot" width="700">
@@ -35,7 +37,6 @@ A modern web application designed to assist Cebu Institute of Technology - Unive
         </details>
 -->
 
----
 
 ## Table of Contents
 
@@ -50,13 +51,11 @@ A modern web application designed to assist Cebu Institute of Technology - Unive
 - [Contributing](#contributing)
 - [License](#license)
 
----
 
 ## About The Project
 
-Navigating course enlistment and manually creating a feasible class schedule can be a time-consuming and frustrating experience for students. The CITU Course Builder aims to alleviate this by providing an intuitive, powerful, and responsive tool. Users can import their available courses, set various preferences and filters, and let the application generate optimal, conflict-free schedules. With local data persistence, students can pick up their planning where they left off. Recent enhancements include robust export functionalities for both course lists and timetable views.
+Navigating course enlistment and manually creating a feasible class schedule can be a time-consuming and frustrating experience for students. The CITU Course Builder, now completed and stable, alleviates this by providing an intuitive, powerful, and responsive tool. Users can import their available courses, set various preferences and filters, and let the application generate optimal, conflict-free schedules. With local data persistence, students can pick up their planning where they left off. The application includes robust export functionalities for both course lists and timetable views.
 
----
 
 ## Key Features
 
@@ -98,8 +97,6 @@ Navigating course enlistment and manually creating a feasible class schedule can
     *   'Original' and 'Comfort' color palettes with improved text contrast and element visibility
     *   Palette persistence between sessions for consistent theming
     *   Built with accessibility and mobile-friendliness in mind
-
----
 
 ## Built With
 
@@ -162,7 +159,6 @@ Ensure you have Node.js and npm (or yarn) installed on your system.
     ```
 The application will typically be available at `http://localhost:12000`.
 
----
 
 ## Usage
 
@@ -181,7 +177,6 @@ Once the application is running:
 
 All your settings, imported courses, and locked courses are automatically saved in your browser's local storage, so you can close the tab and resume later.
 
----
 
 ## Contributing
 
@@ -197,8 +192,6 @@ Don't forget to give the project a star! Thanks again!
 5.  Open a Pull Request
 
 Please make sure to update tests as appropriate.
-
----
 
 ## License
 
