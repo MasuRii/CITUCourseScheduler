@@ -52,8 +52,8 @@ const loadFromLocalStorage = (key, defaultValue) => {
     }
     if (key === LOCAL_STORAGE_KEYS.THEME_PALETTE) {
       if (parsed && typeof parsed === 'object' &&
-        ('light' in parsed && ('original' === parsed.light || 'comfort' === parsed.light)) &&
-        ('dark' in parsed && ('original' === parsed.dark || 'comfort' === parsed.dark))) {
+        ('light' in parsed && (['original', 'comfort', 'space'].includes(parsed.light))) &&
+        ('dark' in parsed && (['original', 'comfort', 'space'].includes(parsed.dark)))) {
         return parsed;
       } else {
         return defaultValue;
@@ -547,9 +547,6 @@ function App() {
   useEffect(() => { localStorage.setItem(LOCAL_STORAGE_KEYS.PREFERRED_TIME_OF_DAY, JSON.stringify(preferredTimeOfDayOrder)); }, [preferredTimeOfDayOrder]);
   useEffect(() => { localStorage.setItem(LOCAL_STORAGE_KEYS.SCHEDULE_SEARCH_MODE, JSON.stringify(scheduleSearchMode)); }, [scheduleSearchMode]);
 
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', 'dark');
-  }, []);
 
   useEffect(() => {
     const filtered = allCourses.filter(course => {

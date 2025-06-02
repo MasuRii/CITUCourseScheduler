@@ -667,7 +667,7 @@ button:focus-visible {
 }
 
 button:disabled {
-  opacity: 0.6;
+  opacity: 0.3;
   cursor: not-allowed;
 }
 
@@ -2156,21 +2156,12 @@ input[type="time"]:focus-visible {
   align-items: center;
 }
 
-.generate-schedule-button {
-  background-color: var(--header-bg);
-  color: var(--header-text);
-  border: none;
-  font-weight: 500;
-  padding: var(--space-2) var(--space-4);
-}
 
 .generate-schedule-button:hover {
   background-color: var(--accent-hover);
 }
 
 .generate-schedule-button:disabled {
-  background-color: var(--button-border);
-  color: var(--text-muted-color);
   cursor: not-allowed;
 }
 
