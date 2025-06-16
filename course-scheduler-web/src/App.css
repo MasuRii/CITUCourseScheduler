@@ -1917,6 +1917,12 @@ input[type="time"]:focus-visible {
   border: 1px solid rgba(255, 75, 75, 0.2);
 }
 
+.status-badge.warning {
+  background-color: rgba(255, 200, 75, 0.15);
+  color: #ffb74d;
+  border: 1px solid rgba(255, 200, 75, 0.2);
+}
+
 [data-theme="dark"] .status-badge.open {
   background-color: rgba(75, 255, 128, 0.12);
   color: #4eff80;
