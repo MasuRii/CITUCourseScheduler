@@ -117,6 +117,7 @@ export const parseRawCourseData = (rawText) => {
                     assessed: parseInt(courseDataColumns[10].trim(), 10) || 0,
                     isClosed: courseDataColumns[11]?.trim().toLowerCase() === 'yes',
                     isLocked: false,
+                    availableSlots: (parseInt(courseDataColumns[8].trim(), 10) || 0) - (parseInt(courseDataColumns[9].trim(), 10) + (parseInt(courseDataColumns[10].trim(), 10) || 0))
                 };
 
                 if (!course.subject || !course.schedule) {

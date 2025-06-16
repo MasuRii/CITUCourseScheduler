@@ -137,34 +137,43 @@ function CourseTable({
           </select>
         </div>
         <div className="status-filter-controls" style={{ marginLeft: 16 }}>
-          <span style={{ fontSize: '0.95em', color: '#888', marginRight: 8 }}>
-            Filter:
-          </span>
+          <span style={{ fontSize: "0.95em", color: "#888", marginRight: 8 }}>Filter:</span>
           <button
-            className={`status-filter-button ${selectedStatusFilter === 'all' ? 'selected' : ''}`}
-            onClick={() => onStatusFilterChange('all')}
-          >
+            className={`status-filter-button ${selectedStatusFilter === "all" ? "selected" : ""}`}
+            onClick={() => onStatusFilterChange("all")}>
             All Courses
           </button>
           <button
-            className={`status-filter-button ${selectedStatusFilter === 'open' ? 'selected' : ''}`}
-            onClick={() => onStatusFilterChange('open')}
-          >
+            className={`status-filter-button ${selectedStatusFilter === "open" ? "selected" : ""}`}
+            onClick={() => onStatusFilterChange("open")}>
             Open Only
           </button>
           <button
-            className={`status-filter-button ${selectedStatusFilter === 'closed' ? 'selected' : ''}`}
-            onClick={() => onStatusFilterChange('closed')}
-          >
+            className={`status-filter-button ${
+              selectedStatusFilter === "closed" ? "selected" : ""
+            }`}
+            onClick={() => onStatusFilterChange("closed")}>
             Closed Only
           </button>
-          <Tooltip title="This filter affects the courses shown below and those available for schedule generation." arrow placement="top">
-            <InfoOutlinedIcon style={{ color: '#1976d2', marginLeft: 6, fontSize: 18, verticalAlign: 'middle', cursor: 'pointer' }} />
+          <Tooltip
+            title="This filter affects the courses shown below and those available for schedule generation."
+            arrow
+            placement="top">
+            <InfoOutlinedIcon
+              style={{
+                color: "#1976d2",
+                marginLeft: 6,
+                fontSize: 18,
+                verticalAlign: "middle",
+                cursor: "pointer",
+              }}
+            />
           </Tooltip>
         </div>
         {totalUnitsDisplay > 0 && (
           <div className="total-units-display">
-            {totalUnitsDisplay} units ({uniqueSubjectsDisplay} subjects) - {lockedCoursesCountDisplay} courses
+            {totalUnitsDisplay} units ({uniqueSubjectsDisplay} subjects) -{" "}
+            {lockedCoursesCountDisplay} courses
           </div>
         )}
         <div className="table-controls">
@@ -173,16 +182,10 @@ function CourseTable({
             aria-controls="export-menu"
             aria-haspopup="true"
             onClick={handleMenuClick}
-            color="inherit"
-          >
+            color="inherit">
             <MenuIcon />
           </IconButton>
-          <Menu
-            id="export-menu"
-            anchorEl={anchorEl}
-            open={open}
-            onClose={handleMenuClose}
-          >
+          <Menu id="export-menu" anchorEl={anchorEl} open={open} onClose={handleMenuClose}>
             <MenuItem onClick={handleCopyToClipboard}>Copy Raw Data to Clipboard</MenuItem>
             <MenuItem onClick={handleDownloadAsText}>Download Raw Data as .txt</MenuItem>
           </Menu>
@@ -191,7 +194,8 @@ function CourseTable({
 
       {conflictingLockedCourseIds && conflictingLockedCourseIds.size > 0 && (
         <div className="conflict-helper-text">
-          Note: Courses highlighted with a red border have schedule conflicts with other locked courses.
+          Note: Courses highlighted with a red border have schedule conflicts with other locked
+          courses.
         </div>
       )}
 
@@ -212,100 +216,182 @@ function CourseTable({
           <tbody className="course-table-body">
             {(!courses || (Array.isArray(courses) && courses.length === 0)) && (
               <tr key="no-data" className="no-data-row">
-                <td className="data-cell" colSpan={8}>No courses to display.</td>
+                <td className="data-cell" colSpan={8}>
+                  No courses to display.
+                </td>
               </tr>
             )}
-            {isGrouped && courses.map((group, groupIndex) => (
-              <Fragment key={`group-${group.groupValue}-${groupIndex}`}>
-                <tr key={`header-${group.groupValue}-${groupIndex}`} className="group-header-row">
-                  <td className="group-header-cell" colSpan={8}>
-                    {group.groupValue} ({group.courses?.length || 0} {(!group.courses || group.courses.length === 1) ? 'course' : 'courses'})
-                  </td>
-                </tr>
-                {group.courses?.map((course, courseIndex) => (
-                  <tr key={`course-${course.id}-${courseIndex}`} className={getRowClasses(course, courseIndex, true)}>
-                    <td className="data-cell">{course.subject}</td>
-                    <td className="data-cell">{course.subjectTitle}</td>
-                    <td className="data-cell">{course.creditedUnits || course.units}</td>
-                    <td className="data-cell">{course.section}</td>
-                    <td className="data-cell">{course.schedule}</td>
-                    <td className="data-cell">{course.room}</td>
-                    <td className="data-cell">
-                      {course.isClosed ?
-                        <span className="status-badge closed">Closed</span> :
-                        <span className="status-badge open">Open</span>}
-                    </td>
-                    <td className="data-cell actions-cell">
-                      <button
-                        onClick={() => onToggleLockCourse({ id: course.id, subject: course.subject, section: course.section })}
-                        className={`lock-button ${course.isLocked ? 'locked' : 'unlocked'}`}
-                        title={course.isLocked ? 'Unlock Course' : 'Lock Course'}
-                      >
-                        {course.isLocked && conflictingLockedCourseIds && conflictingLockedCourseIds.has(course.id) && (
-                          <span className="conflict-icon" title="Schedule conflict with another locked course" aria-label="Schedule conflict">⚠️</span>
-                        )}
-                        {course.isLocked ? 'Unlock' : 'Lock'}
-                      </button>
-                      <button
-                        onClick={() => onDeleteCourse({ id: course.id, subject: course.subject, section: course.section })}
-                        className="delete-button"
-                        title="Delete Course"
-                      >
-                        ✕
-                      </button>
+            {isGrouped &&
+              courses.map((group, groupIndex) => (
+                <Fragment key={`group-${group.groupValue}-${groupIndex}`}>
+                  <tr key={`header-${group.groupValue}-${groupIndex}`} className="group-header-row">
+                    <td className="group-header-cell" colSpan={8}>
+                      {group.groupValue} ({group.courses?.length || 0}{" "}
+                      {!group.courses || group.courses.length === 1 ? "course" : "courses"})
                     </td>
                   </tr>
-                ))}
-              </Fragment>
-            ))}
-            {!isGrouped && Array.isArray(courses) && courses.map((course, index) => (
-              <tr key={`course-${course.id}-${index}`} className={getRowClasses(course, index, false)}>
-                <td className="data-cell">{course.subject}</td>
-                <td className="data-cell">{course.subjectTitle}</td>
-                <td className="data-cell">{course.creditedUnits || course.units}</td>
-                <td className="data-cell">{course.section}</td>
-                <td className="data-cell">{course.schedule}</td>
-                <td className="data-cell">{course.room}</td>
-                <td className="data-cell">
-                  {course.isClosed ?
-                    <span className="status-badge closed">Closed</span> :
-                    <span className="status-badge open">Open</span>}
-                </td>
-                <td className="data-cell actions-cell">
-                  <button
-                    onClick={() => onToggleLockCourse({ id: course.id, subject: course.subject, section: course.section })}
-                    className={`lock-button ${course.isLocked ? 'locked' : 'unlocked'}`}
-                    title={course.isLocked ? 'Unlock Course' : 'Lock Course'}
-                  >
-                    {course.isLocked && conflictingLockedCourseIds && conflictingLockedCourseIds.has(course.id) && (
-                      <span className="conflict-icon" title="Schedule conflict with another locked course" aria-label="Schedule conflict">⚠️</span>
+                  {group.courses?.map((course, courseIndex) => (
+                    <tr
+                      key={`course-${course.id}-${courseIndex}`}
+                      className={getRowClasses(course, courseIndex, true)}>
+                      <td className="data-cell">{course.subject}</td>
+                      <td className="data-cell">{course.subjectTitle}</td>
+                      <td className="data-cell">{course.creditedUnits || course.units}</td>
+                      <td className="data-cell">{course.section}</td>
+                      <td className="data-cell">{course.schedule}</td>
+                      <td className="data-cell">{course.room}</td>
+                      <td className="data-cell">
+                        {course.isClosed ? (
+                          <span className="status-badge closed">Closed</span>
+                        ) : course.availableSlots <= 0 ? (
+                          <span className="status-badge warning">
+                            Slots full: {course.availableSlots}/{course.totalSlots}
+                          </span>
+                        ) : (
+                          <span className="status-badge open">
+                            Available: {course.availableSlots}/{course.totalSlots}
+                          </span>
+                        )}
+                      </td>
+
+                      <td className="data-cell actions-cell">
+                        <button
+                          onClick={() =>
+                            onToggleLockCourse({
+                              id: course.id,
+                              subject: course.subject,
+                              section: course.section,
+                            })
+                          }
+                          className={`lock-button ${course.isLocked ? "locked" : "unlocked"}`}
+                          title={
+                            course.availableSlots <= 0
+                              ? "Cannot lock - no available slots"
+                              : course.isLocked
+                              ? "Unlock Course"
+                              : "Lock Course"
+                          }
+                          disabled={course.availableSlots <= 0}>
+                          {course.isLocked &&
+                            conflictingLockedCourseIds &&
+                            conflictingLockedCourseIds.has(course.id) && (
+                              <span
+                                className="conflict-icon"
+                                title="Schedule conflict with another locked course"
+                                aria-label="Schedule conflict">
+                                ⚠️
+                              </span>
+                            )}
+                          {course.isLocked ? "Unlock" : "Lock"}
+                        </button>
+
+                        <button
+                          onClick={() =>
+                            onDeleteCourse({
+                              id: course.id,
+                              subject: course.subject,
+                              section: course.section,
+                            })
+                          }
+                          className="delete-button"
+                          title="Delete Course">
+                          ✕
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </Fragment>
+              ))}
+            {!isGrouped &&
+              Array.isArray(courses) &&
+              courses.map((course, index) => (
+                <tr
+                  key={`course-${course.id}-${index}`}
+                  className={getRowClasses(course, index, false)}>
+                  <td className="data-cell">{course.subject}</td>
+                  <td className="data-cell">{course.subjectTitle}</td>
+                  <td className="data-cell">{course.creditedUnits || course.units}</td>
+                  <td className="data-cell">{course.section}</td>
+                  <td className="data-cell">{course.schedule}</td>
+                  <td className="data-cell">{course.room}</td>
+                  <td className="data-cell">
+                    {course.isClosed ? (
+                      <span className="status-badge closed">Closed</span>
+                    ) : course.availableSlots <= 0 ? (
+                      <span className="status-badge warning">
+                        Slots full: {course.availableSlots}/{course.totalSlots}
+                      </span>
+                    ) : (
+                      <span className="status-badge open">
+                        Available: {course.availableSlots}/{course.totalSlots}
+                      </span>
                     )}
-                    {course.isLocked ? 'Unlock' : 'Lock'}
-                  </button>
-                  <button
-                    onClick={() => onDeleteCourse({ id: course.id, subject: course.subject, section: course.section })}
-                    className="delete-button"
-                    title="Delete Course"
-                  >
-                    ✕
-                  </button>
-                </td>
-              </tr>
-            ))}
+                  </td>
+                  <td className="data-cell actions-cell">
+                    <button
+                      onClick={() =>
+                        onToggleLockCourse({
+                          id: course.id,
+                          subject: course.subject,
+                          section: course.section,
+                        })
+                      }
+                      className={`lock-button ${course.isLocked ? "locked" : "unlocked"}`}
+                      title={
+                        course.availableSlots <= 0
+                          ? "Cannot lock - no slots available"
+                          : course.isLocked
+                          ? "Unlock Course"
+                          : "Lock Course"
+                      }
+                      disabled={course.availableSlots <= 0}>
+                      {course.isLocked &&
+                        conflictingLockedCourseIds &&
+                        conflictingLockedCourseIds.has(course.id) && (
+                          <span
+                            className="conflict-icon"
+                            title="Schedule conflict with another locked course"
+                            aria-label="Schedule conflict">
+                            ⚠️
+                          </span>
+                        )}
+                      {course.isLocked ? "Unlock" : "Lock"}
+                    </button>
+                  </td>
+                </tr>
+              ))}
           </tbody>
         </table>
       </div>
 
       <div className="table-action-controls">
         <button onClick={onClearAllLocks}>
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round">
             <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
             <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
           </svg>
           Clear All Locks
         </button>
         <button className="danger-button" onClick={onDeleteAllCourses}>
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round">
             <path d="M3 6h18"></path>
             <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
             <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
